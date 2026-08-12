@@ -282,10 +282,7 @@ nav button[hidden]{display:none}
   <div class="card">
     <div class="eyebrow" data-i="setApi">Backend (Google Sheets)</div>
     <label class="f"><span data-i="apiUrl">Apps Script web app URL</span><input id="apiUrl" class="mono small" placeholder="https://script.google.com/macros/s/..../exec"></label>
-    <div class="grid2">
-      <label class="f"><span data-i="apiTok">App token</span><input id="apiTok" class="mono small"></label>
-      <label class="f"><span data-i="apiPin">Admin PIN</span><input id="apiPin" type="password" class="mono small"></label>
-    </div>
+    <label class="f"><span data-i="apiTok">App token</span><input id="apiTok" class="mono small"></label>
     <div class="row"><button class="btn ghost sm" id="test" data-i="test">Test connection</button><span class="small muted" id="testOut"></span></div>
     <div class="note" style="margin-top:10px" data-i="apiNote">Models, promoters, campaign dates and thresholds are maintained in the Google Sheet.</div>
   </div>
@@ -324,6 +321,15 @@ nav button[hidden]{display:none}
 <div class="toast" id="toast"></div>
 
 <script>
+/* ═══════════════════════════════════════════════════════════════════
+   BUILD — 上线前只改这两行，然后把整个文件传上 GitHub。
+   促销员打开链接即已连上后端，手机上不需要做任何设置。
+   ═══════════════════════════════════════════════════════════════════ */
+const BUILD = {
+  api:   "",   // https://script.google.com/macros/s/AKfycbyri6JRvU-iTC8tmJp29jGbVVCIFPIfVpYMdVsUPoXG2hJU4xhcHHFIryq5dPt32mDw5w/exec
+  token: ""    // TECNO-JARIR-2026
+};
+
 /* ══════════════════════════════════════════════════════════════
    i18n — promoter flow is fully trilingual; admin falls back to EN
    ══════════════════════════════════════════════════════════════ */
@@ -335,7 +341,7 @@ const I18N = {
    resTitle:"核销结果",myTitle:"我的提交记录",qTitle:"待人工审核",reload:"刷新",
    byP:"促销员销量",byM:"机型销量",byD:"按日期",exp:"导出 CSV",expx:"导出 Excel",
    setApi:"后端（Google Sheets）",apiUrl:"Apps Script 部署地址",apiTok:"应用令牌 Token",apiPin:"管理 PIN",test:"测试连接",
-   apiNote:"机型清单、促销员名单、活动周期、风险阈值全部在 Google Sheet 里维护，本页不再提供。",
+   apiNote:"后端地址和 Token 已打包在文件里，促销员无需设置。此处仅供临时切换后端。机型、名单、周期、阈值都在 Google Sheet 维护。",
    setLocal:"本地兜底参数（未接后端时生效）",cStart:"有效发票日期从",cEnd:"有效发票日期至",
    cAuto:"风险分低于此值自动通过",cRej:"风险分高于此值自动拒绝",cPrice:"价格下限（RRP 的 %）",cImei:"必须有 IMEI",
    setEng:"识别引擎",engEnd:"接口地址",engKey:"API Key（自建时才需要）",
@@ -353,7 +359,7 @@ const I18N = {
    resTitle:"Result",myTitle:"My submissions",qTitle:"Manual review queue",reload:"Reload",
    byP:"Sell-out by promoter",byM:"Sell-out by model",byD:"Sell-out by date",exp:"Export CSV",expx:"Export Excel",
    setApi:"Backend (Google Sheets)",apiUrl:"Apps Script web app URL",apiTok:"App token",apiPin:"Admin PIN",test:"Test connection",
-   apiNote:"Models, promoters, campaign dates and thresholds are maintained in the Google Sheet.",
+   apiNote:"The backend URL and token ship inside this file — promoters set up nothing. Models, promoters, dates and thresholds live in the Google Sheet.",
    setLocal:"Local fallback (used when no backend)",cStart:"Valid invoice date from",cEnd:"Valid invoice date to",
    cAuto:"Auto-approve if risk below",cRej:"Auto-reject if risk at or above",cPrice:"Price floor (% of RRP)",cImei:"IMEI required",
    setEng:"Recognition engine",engEnd:"API endpoint",engKey:"API key (self-hosted only)",
@@ -894,17 +900,17 @@ function renderMine(){
 
 /* ══ settings — reached only after the 5-tap unlock ══ */
 function fillSettings(){
-  $("#apiUrl").value=CFG.api; $("#apiTok").value=CFG.token; $("#apiPin").value=CFG.pin;
+  $("#apiUrl").value=CFG.api; $("#apiTok").value=CFG.token;
   $("#cStart").value=CFG.start;$("#cEnd").value=CFG.end;$("#cAuto").value=CFG.auto;$("#cRej").value=CFG.rej;
   $("#cPrice").value=CFG.priceFloor;$("#cImei").value=CFG.imeiRequired?"1":"0";
   $("#engEnd").value=CFG.endpoint;$("#engKey").value=CFG.apiKey;
 }
 $("#save").onclick=async()=>{
-  CFG.api=$("#apiUrl").value.trim(); CFG.token=$("#apiTok").value.trim(); CFG.pin=$("#apiPin").value.trim();
+  CFG.api=$("#apiUrl").value.trim(); CFG.token=$("#apiTok").value.trim();
   CFG.start=$("#cStart").value;CFG.end=$("#cEnd").value;
   CFG.auto=+$("#cAuto").value;CFG.rej=+$("#cRej").value;CFG.priceFloor=+$("#cPrice").value;
   CFG.imeiRequired=+$("#cImei").value;CFG.endpoint=$("#engEnd").value.trim();CFG.apiKey=$("#engKey").value.trim();
-  await Store.set(KEY_CFG,CFG);
+  await Store.set(KEY_CFG,strip(CFG));
   try{ await bootstrap(); }catch(e){ toast("Backend: "+e.message); }
   fillPromoters(); await DB.load(); refresh(); netBadge(); toast(t("ok"));
 };
@@ -935,12 +941,18 @@ $("#pSel").onchange=syncStore;
    opens only after 5 taps within 4 seconds, then an optional PIN.      */
 let taps=0,tapT=null;
 function lockAdmin(){
-  UNLOCKED=false; taps=0;
+  UNLOCKED=false; taps=0; CFG.pin="";
   $("#bRev").hidden=true; $("#bDat").hidden=true;
   showView("up"); toast(t("locked"));
 }
-function unlockAdmin(){
-  if(CFG.pin){ const v=window.prompt(t("pin")); if(v!==CFG.pin){ toast("✕"); return; } }
+async function unlockAdmin(){
+  const v=window.prompt(t("pin"));
+  if(v===null||v==="") return;
+  if(API.on()){
+    try{ await API.call("auth",{pin:v}); }
+    catch(e){ toast("✕ "+e.message); return; }
+  }else if(CFG.pin && v!==CFG.pin){ toast("✕"); return; }
+  CFG.pin=v;                    /* in memory for this session only — never stored, never shipped */
   UNLOCKED=true; $("#bRev").hidden=false; $("#bDat").hidden=false; showView("set");
 }
 function showView(v){
@@ -973,8 +985,10 @@ function refresh(){
   $("#qn").textContent=RECS.filter(r=>r.status==="review").length;
   renderQueue();renderData();renderMine();
 }
+function strip(c){ const o={...c}; delete o.pin; return o; }
 (async function init(){
   CFG={...DEFAULT_CFG,...(await Store.get(KEY_CFG,{}))};
+  if(BUILD.api){ CFG.api=BUILD.api; CFG.token=BUILD.token; CFG.pin=""; }  /* shipped config always wins */
   try{ await bootstrap(); }catch(e){ console.warn("bootstrap",e); }
   await DB.load();
   fillPromoters(); fillSettings(); setLang("zh"); netBadge();
