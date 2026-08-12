@@ -208,6 +208,19 @@ nav button[hidden]{display:none}
   </div>
 
   <div class="card">
+    <div class="eyebrow" data-i="mTitle">Invoice details — you type these</div>
+    <div class="grid2">
+      <label class="f"><span data-i="mInv">Invoice no. *</span><input id="mInv" class="mono" autocomplete="off"></label>
+      <label class="f"><span data-i="mDate">Sale date *</span><input id="mDate" type="date"></label>
+      <label class="f"><span data-i="mModel">Model *</span><select id="mModel"></select></label>
+      <label class="f"><span data-i="mQty">Quantity</span><input id="mQty" type="number" min="1" max="20" value="1"></label>
+      <label class="f"><span data-i="mImei">IMEI</span><input id="mImei" class="mono" inputmode="numeric" autocomplete="off"></label>
+      <label class="f"><span data-i="mPrice">Price paid (SAR)</span><input id="mPrice" type="number" min="0"></label>
+    </div>
+    <div class="note" data-i="mNote">What you type is what counts. The photo is the evidence and the AI reading is a cross-check.</div>
+  </div>
+
+  <div class="card">
     <div class="eyebrow" data-i="upTitle">Invoice photo</div>
     <div class="drop" id="drop">
       <div class="big" data-i="dropBig">Tap to take a photo of the invoice</div>
@@ -337,6 +350,10 @@ const BUILD = {
 const I18N = {
  zh:{hsub:"Jarir 发票核销",navUp:"上传",navRev:"人工审核",navDat:"销量",navSet:"设置",
    who:"促销员",pName:"促销员",pStore:"门店",upTitle:"发票照片",
+   mTitle:"发票信息（手工填写，以此为准）",mInv:"发票号 *",mDate:"销售日期 *",mModel:"机型 *",mQty:"数量",mImei:"IMEI",mPrice:"实付金额 SAR",
+   mNote:"以你填写的内容为准。照片是凭证，AI 识别只做交叉核对——识别不出来也照样能提交。",
+   needFields:"发票号、销售日期、机型为必填",aiFail:"AI 未能识别，已按你填写的内容记录，转人工审核",
+   aiTitle:"AI 识别结果（参考）",aiNone:"未识别",manualTitle:"你填写的内容",
    dropBig:"点击拍摄 / 选择发票照片",dropSub:"一张照片要能同时看清：门店名、发票号、日期、机型、IMEI。可加传一张 IMEI 串码贴纸。",
    btnGo:"识别并提交",s1:"读取图片、计算指纹",s2:"快速查重",s3:"识别发票字段",s4:"风险判定并归档",
    resTitle:"核销结果",myTitle:"我的提交记录",qTitle:"待人工审核",reload:"刷新",
@@ -355,6 +372,10 @@ const I18N = {
    netOn:"已连接后端 Sheets",netOff:"本地模式（未连后端，仅本机查重）",locked:"设置已锁定",pin:"请输入管理 PIN"},
  en:{hsub:"Jarir Invoice Verification",navUp:"Upload",navRev:"Review",navDat:"Sell-out",navSet:"Settings",
    who:"Promoter",pName:"Promoter",pStore:"Store",upTitle:"Invoice photo",
+   mTitle:"Invoice details — you type these",mInv:"Invoice no. *",mDate:"Sale date *",mModel:"Model *",mQty:"Quantity",mImei:"IMEI",mPrice:"Price paid (SAR)",
+   mNote:"What you type is what counts. The photo is the evidence; the AI reading is only a cross-check — it can fail and your record still goes through.",
+   needFields:"Invoice no., sale date and model are required",aiFail:"AI could not read the photo. Your entry was filed and sent to manual review.",
+   aiTitle:"AI reading (reference)",aiNone:"not read",manualTitle:"What you entered",
    dropBig:"Tap to photograph the invoice",dropSub:"One clear shot showing store name, invoice number, date, model and IMEI. You may add a second photo of the IMEI label.",
    btnGo:"Verify & submit",s1:"Reading image, building fingerprint",s2:"Fast duplicate check",s3:"Reading invoice fields",s4:"Risk rules & filing",
    resTitle:"Result",myTitle:"My submissions",qTitle:"Manual review queue",reload:"Reload",
@@ -373,6 +394,10 @@ const I18N = {
    netOn:"Connected to the Sheets backend",netOff:"Local mode — duplicates checked on this device only",locked:"Settings locked",pin:"Enter admin PIN"},
  ar:{hsub:"التحقق من فواتير جرير",navUp:"رفع",navRev:"المراجعة",navDat:"المبيعات",navSet:"الإعدادات",
    who:"المروّج",pName:"المروّج",pStore:"المعرض",upTitle:"صورة الفاتورة",
+   mTitle:"بيانات الفاتورة — تُدخلها بنفسك",mInv:"رقم الفاتورة *",mDate:"تاريخ البيع *",mModel:"الموديل *",mQty:"الكمية",mImei:"IMEI",mPrice:"المبلغ المدفوع (ريال)",
+   mNote:"ما تُدخله هو المعتمد. الصورة دليل، وقراءة الذكاء الاصطناعي للمطابقة فقط.",
+   needFields:"رقم الفاتورة وتاريخ البيع والموديل حقول إلزامية",aiFail:"تعذّرت القراءة الآلية. تم حفظ إدخالك وإحالته للمراجعة.",
+   aiTitle:"القراءة الآلية (مرجعية)",aiNone:"لم تُقرأ",manualTitle:"ما أدخلته",
    dropBig:"اضغط لتصوير الفاتورة",dropSub:"صورة واضحة تُظهر اسم المعرض ورقم الفاتورة والتاريخ والموديل ورقم IMEI. يمكن إضافة صورة ثانية لملصق IMEI.",
    btnGo:"تحقق وأرسل",s1:"قراءة الصورة وإنشاء البصمة",s2:"فحص سريع للتكرار",s3:"قراءة بيانات الفاتورة",s4:"قواعد المخاطر والحفظ",
    resTitle:"النتيجة",myTitle:"طلباتي",qTitle:"قائمة المراجعة",reload:"تحديث",
@@ -414,6 +439,11 @@ const RULES = {
  no_model:{w:35,zh:"未识别到机型",en:"No model found",ar:"لم يتم العثور على موديل"},
  price_low:{w:20,zh:"成交价低于价格下限",en:"Price below the floor",ar:"السعر أقل من الحد"},
  store_mismatch:{w:15,zh:"发票门店与促销员绑定门店不一致",en:"Invoice store differs from the promoter's store",ar:"المعرض لا يطابق"},
+ ocr_failed:{w:0,zh:"AI 未能识别照片，转人工核对",en:"AI could not read the photo — manual check",ar:"تعذّرت القراءة الآلية"},
+ mismatch_invno:{w:45,zh:"填写的发票号与照片上的不一致",en:"Typed invoice number differs from the photo",ar:"رقم الفاتورة لا يطابق الصورة"},
+ mismatch_date:{w:35,zh:"填写的日期与照片上的不一致",en:"Typed date differs from the photo",ar:"التاريخ لا يطابق الصورة"},
+ mismatch_model:{w:40,zh:"填写的机型与照片上的不一致",en:"Typed model differs from the photo",ar:"الموديل لا يطابق الصورة"},
+ mismatch_qty:{w:25,zh:"填写的数量与照片上的不一致",en:"Typed quantity differs from the photo",ar:"الكمية لا تطابق الصورة"},
  not_jarir:{w:45,zh:"发票不是 Jarir 开具",en:"Invoice is not from Jarir",ar:"الفاتورة ليست من جرير"},
  no_imei:{w:10,zh:"发票上无 IMEI",en:"No IMEI on the invoice",ar:"لا يوجد IMEI"},
  qty_high:{w:10,zh:"单张发票数量偏大，疑似批发",en:"Large quantity on one invoice",ar:"كمية كبيرة"},
@@ -600,60 +630,59 @@ function findModel(it){
   if(!m) m=CFG.models.find(x=>name.includes(norm(x[1])));
   return m||null;
 }
-function evaluate(ocr,ctx){
-  const add=[], hit=c=>add.push(c);
-  const a=ocr.authenticity||{};
-  if(ocr.is_invoice===false||["screenshot","other","quotation"].includes(ocr.doc_type)&&ocr.is_invoice!==true) hit("not_invoice");
-  if(ocr.is_jarir===false) hit("not_jarir");
-  if(a.edit_traces) hit("edit_traces");
-  if(a.screen_recapture) hit("screen_recapture");
-  if(a.screenshot&&ocr.doc_type!=="invoice") hit("screenshot");
-  if(a.handwritten) hit("handwritten");
-  if(a.blurry||a.key_fields_cropped) hit("blurry");
-  if((ocr.confidence??1)<0.6) hit("low_conf");
+function evaluate(man,ocr,ctx){
+  const add=[],hit=c=>{if(!add.includes(c))add.push(c)};
+  const today=new Date().toISOString().slice(0,10);
 
-  /* date */
-  const d=ocr.invoice_date;
-  if(!d) hit("date_missing");
+  /* ── what the promoter typed IS the record; these checks run on that ── */
+  if(!man.date) hit("date_missing");
+  else if(man.date>today) hit("date_future");
+  else if(man.date<CFG.start||man.date>CFG.end) hit("date_out");
+  else if((Date.parse(today)-Date.parse(man.date))/864e5>7) hit("date_old");
+  if(!man.invNo) hit("invno_missing");
+  if(!man.models.length) hit("no_model");
+  if(man.qty>3) hit("qty_high");
+  if(CFG.imeiRequired&&!man.imeis.length) hit("no_imei");
+  const mm=man.models[0]&&CFG.models.find(x=>x[0]===man.models[0].code);
+  if(mm&&mm[2]&&man.total&&man.total/Math.max(1,man.qty)<mm[2]*CFG.priceFloor/100) hit("price_low");
+
+  /* ── the photo, read by AI: evidence check plus cross-check ── */
+  if(!ocr){ hit("ocr_failed"); }
   else{
-    const today=new Date().toISOString().slice(0,10);
-    if(d>today) hit("date_future");
-    else if(d<CFG.start||d>CFG.end) hit("date_out");
-    else if((Date.parse(today)-Date.parse(d))/864e5>7) hit("date_old");
+    const a=ocr.authenticity||{};
+    if(ocr.is_invoice===false||(["screenshot","other","quotation"].includes(ocr.doc_type)&&ocr.is_invoice!==true)) hit("not_invoice");
+    if(ocr.is_jarir===false) hit("not_jarir");
+    if(a.edit_traces) hit("edit_traces");
+    if(a.screen_recapture) hit("screen_recapture");
+    if(a.screenshot&&ocr.doc_type!=="invoice") hit("screenshot");
+    if(a.handwritten) hit("handwritten");
+    if(a.blurry||a.key_fields_cropped) hit("blurry");
+    if((ocr.confidence??1)<0.6) hit("low_conf");
+
+    if(ocr.invoice_no&&man.invNo&&norm(ocr.invoice_no)!==norm(man.invNo)) hit("mismatch_invno");
+    if(ocr.invoice_date&&man.date&&ocr.invoice_date!==man.date) hit("mismatch_date");
+    const oCodes=(ocr.items||[]).map(i=>{const f=findModel(i);return f?f[0]:"";}).filter(Boolean);
+    if(oCodes.length&&man.models.length&&oCodes.indexOf(man.models[0].code)<0) hit("mismatch_model");
+    const oQty=(ocr.items||[]).reduce((s,i)=>s+Math.max(1,parseInt(i.qty)||1),0);
+    if(oQty&&man.qty&&oQty!==man.qty) hit("mismatch_qty");
+
+    const st=norm(ocr.seller)+norm(ocr.branch),mine=norm(ctx.store);
+    if(st&&mine&&!st.includes(mine.slice(0,5))&&!mine.includes(st.slice(0,5))) hit("store_mismatch");
   }
-  if(!ocr.invoice_no) hit("invno_missing");
 
-  /* models + qty + price */
-  const items=(ocr.items||[]).filter(i=>i&&(i.model_code||i.model_name||i.raw));
-  let qty=0, models=[], unknown=false, low=false;
-  items.forEach(i=>{
-    const m=findModel(i), q=Math.max(1,parseInt(i.qty)||1);
-    if(m){ qty+=q; models.push({code:m[0],name:m[1],qty:q,price:+i.unit_price||0,imei:i.imei||""});
-      if(i.unit_price && +i.unit_price < m[2]*CFG.priceFloor/100) low=true;
-    } else unknown=true;
-  });
-  if(!models.length) hit("no_model"); else if(unknown) hit("model_unknown");
-  if(low) hit("price_low");
-  if(qty>3) hit("qty_high");
-
-  const imeis=[...new Set([...(ocr.imeis||[]),...items.map(i=>i.imei)].filter(x=>x&&(""+x).replace(/\D/g,"").length>=14).map(x=>(""+x).replace(/\D/g,"")))];
-  if(CFG.imeiRequired&&!imeis.length) hit("no_imei");
-
-  /* store */
-  const st=norm(ocr.seller)+norm(ocr.branch);
-  const mine=norm(ctx.store);
-  if(st&&mine&&!st.includes(mine.slice(0,5))&&!mine.includes(st.slice(0,5))) hit("store_mismatch");
-
-  /* duplicates */
+  /* ── duplicates: keyed on what was typed plus the image fingerprints ── */
   if(RECS.some(r=>r.sha===ctx.sha)) hit("dup_file");
   else if(RECS.some(r=>hamming(r.dh,ctx.dh)<=6)) hit("dup_image");
-  if(ocr.invoice_no&&RECS.some(r=>norm(r.invNo)===norm(ocr.invoice_no)&&norm(r.seller)===norm(ocr.seller))) hit("dup_invoice");
-  if(imeis.length&&RECS.some(r=>(r.imeis||[]).some(x=>imeis.includes(x)))) hit("dup_imei");
-  if(!add.includes("dup_invoice")&&RECS.some(r=>r.date===d&&norm(r.seller)===norm(ocr.seller)&&r.total===(+ocr.total||0)&&r.qty===qty&&qty>0)) hit("dup_fuzzy");
+  if(man.invNo&&RECS.some(r=>norm(r.invNo)===norm(man.invNo))) hit("dup_invoice");
+  if(man.imeis.length&&RECS.some(r=>(r.imeis||[]).some(x=>man.imeis.includes(x)))) hit("dup_imei");
+  if(add.indexOf("dup_invoice")<0&&man.qty>0&&
+     RECS.some(r=>r.date===man.date&&r.total===man.total&&r.qty===man.qty&&
+       (r.models||[]).some(x=>man.models.some(y=>y.code===x.code)))) hit("dup_fuzzy");
 
   const risk=Math.min(100,add.reduce((s,c)=>s+(RULES[c]?.w||0),0));
-  const status = risk>=CFG.rej?"rejected" : risk<CFG.auto?"approved" : "review";
-  return {codes:add,risk,status,qty,models,imeis};
+  /* an unreadable photo is no evidence, so it never auto-approves */
+  const status = risk>=CFG.rej ? "rejected" : (!ocr ? "review" : (risk<CFG.auto ? "approved" : "review"));
+  return {codes:add,risk,status};
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -686,7 +715,18 @@ function renderThumbs(){
 
 $("#go").onclick=async()=>{
   const p=CFG.promoters.find(x=>x[0]===$("#pSel").value);
+  const man={
+    invNo:$("#mInv").value.trim(),
+    date:$("#mDate").value,
+    qty:Math.max(1,parseInt($("#mQty").value)||1),
+    total:+$("#mPrice").value||0,
+    imeis:[$("#mImei").value.replace(/\D/g,"")].filter(x=>x.length>=14)
+  };
+  const sel=CFG.models.find(x=>x[0]===$("#mModel").value);
+  man.models=sel?[{code:sel[0],name:sel[1],qty:man.qty,price:man.total?Math.round(man.total/man.qty):0,imei:man.imeis[0]||""}]:[];
   if(!p||!FILES.length){toast(t("need"));return;}
+  if(!man.invNo||!man.date||!man.models.length){toast(t("needFields"));return;}
+
   $("#go").disabled=true; $("#tape").hidden=false; $("#resultWrap").hidden=true;
   [1,2,3,4].forEach(n=>step(n,""));
   try{
@@ -699,41 +739,51 @@ $("#go").onclick=async()=>{
     const thumb=await shrink(img,320,.5);
     step(1,"done"); step(2,"on");
 
-    /* cheap server-side hash check first — a re-upload never reaches the reader */
     if(API.on()){
-      const pre=await API.call("precheck",{sha,dh});
-      if(pre.dup){
-        step(2,"done");
-        showReceipt({id:pre.hit||"—",status:"rejected",risk:100,codes:pre.codes||["dup_file"],
-          invNo:pre.invoice_no||"",date:pre.invoice_date||"",seller:pre.seller||"",
-          total:0,qty:0,models:[],imeis:[],pstore:p[3]});
-        FILES=[];renderThumbs();
-        return;
-      }
+      try{
+        const pre=await API.call("precheck",{sha,dh});
+        if(pre.dup){
+          step(2,"done");
+          showReceipt({id:pre.hit||"—",status:"rejected",risk:100,codes:pre.codes||["dup_file"],
+            invNo:man.invNo,date:man.date,seller:pre.seller||"",total:man.total,qty:man.qty,
+            models:man.models,imeis:man.imeis,pstore:p[3],ai:null});
+          FILES=[];renderThumbs(); return;
+        }
+      }catch(e){ console.warn("precheck skipped:",e.message); }
     }
     step(2,"done"); step(3,"on");
 
-    const ocr=await readInvoice(b64);
-    step(3,"done"); step(4,"on");
-    await DB.load();                                  // fresh ledger before judging
+    /* the reader may fail or time out — the record is filed either way */
+    let ocr=null, aiError="";
+    try{ ocr=await readInvoice(b64); }
+    catch(e){ aiError=e.message; console.warn("OCR failed:",e.message); }
+    step(3,ocr?"done":""); step(4,"on");
 
-    const ev=evaluate(ocr,{store:p[3],sha,dh});
+    try{ await DB.load(); }catch(e){}
+    const ev=evaluate(man,ocr,{store:p[3],sha,dh});
     let rec={
       id:"INV"+Date.now().toString(36).toUpperCase(),
       ts:new Date().toISOString(),
       pid:p[0],pname:p[1],storeCode:p[2],pstore:p[3],channel:p[4]||"Jarir",
       sha,dh,thumb,
-      invNo:ocr.invoice_no||"",date:ocr.invoice_date||"",
-      seller:(ocr.seller||"")+(ocr.branch?" · "+ocr.branch:""),
-      total:+ocr.total||0,vat:+ocr.vat||0,conf:ocr.confidence??null,docType:ocr.doc_type||"",
-      qty:ev.qty,models:ev.models,imeis:ev.imeis,codes:ev.codes,risk:ev.risk,status:ev.status,
-      notes:(ocr.authenticity||{}).notes||""
+      invNo:man.invNo,date:man.date,qty:man.qty,total:man.total,
+      models:man.models,imeis:man.imeis,
+      seller:ocr?((ocr.seller||"")+(ocr.branch?" · "+ocr.branch:"")):p[3],
+      vat:ocr?(+ocr.vat||0):0,conf:ocr?(ocr.confidence??null):null,docType:ocr?(ocr.doc_type||""):"",
+      entryMode:ocr?"manual+ai":"manual only",
+      aiInvNo:ocr?(ocr.invoice_no||""):"",aiDate:ocr?(ocr.invoice_date||""):"",
+      aiModels:ocr?((ocr.items||[]).map(i=>((i.model_name||i.model_code||i.raw||"")+" ×"+(i.qty||1))).join(" / ")):"",
+      aiConf:ocr?(ocr.confidence??""):"",aiError:aiError,
+      codes:ev.codes,risk:ev.risk,status:ev.status,
+      notes:ocr?((ocr.authenticity||{}).notes||""):""
     };
     rec=await DB.add(rec,b64)||rec;
     step(4,"done");
+    if(!ocr) toast(t("aiFail"));
     showReceipt(rec);
     FILES=[];renderThumbs();
-    await DB.load(); refresh();
+    ["mInv","mImei","mPrice"].forEach(id=>{$("#"+id).value="";});
+    try{ await DB.load(); refresh(); }catch(e){}
   }catch(e){
     [2,3,4].forEach(n=>step(n,""));
     toast("Failed — "+e.message);
@@ -744,21 +794,25 @@ $("#go").onclick=async()=>{
 
 function showReceipt(r){
   const line=(k,v)=>`<div class="kv"><b>${k}</b><span>${v||"—"}</span></div>`;
-  const chks=r.codes.length? r.codes.map(c=>{
-      const R=RULES[c]||{}; const sev=(R.w||0)>=30?"fail":"warn";
-      return `<div class="chk ${sev}"><span class="i">${sev==="fail"?"✕":"!"}</span><span>${R[LANG]||R.en||c}<span class="d"> · ${R.w}</span></span></div>`;
-    }).join("")
-    : `<div class="chk pass"><span class="i">✓</span><span>${LANG==="zh"?"全部校验通过":LANG==="ar"?"اجتاز جميع الفحوصات":"All checks passed"}</span></div>`;
+  const head=x=>`<div class="kv" style="border:0;padding-top:9px"><b>${x}</b><span></span></div>`;
+  const chks=(r.codes||[]).length?r.codes.map(c=>{const R=RULES[c]||{};const sev=(R.w||0)>=30?"fail":"warn";
+      return `<div class="chk ${sev}"><span class="i">${sev==="fail"?"✕":"!"}</span><span>${R[LANG]||R.en||c}${R.w?`<span class="d"> · ${R.w}</span>`:""}</span></div>`;}).join("")
+    :`<div class="chk pass"><span class="i">✓</span><span>${LANG==="zh"?"全部校验通过":LANG==="ar"?"اجتاز جميع الفحوصات":"All checks passed"}</span></div>`;
+  const ai=(r.aiInvNo||r.aiDate||r.aiModels)
+    ? line(t("invno"),r.aiInvNo)+line(t("date"),r.aiDate)+line(t("model"),r.aiModels)
+    : `<div class="kv"><b>—</b><span>${t("aiNone")}</span></div>`;
   $("#receipt").innerHTML=`
     <div class="stamp ${r.status}">${t(r.status)}<small>RISK ${r.risk}</small></div>
     <h3>${r.id}</h3>
-    ${line(t("store"),r.seller||r.pstore)}
+    ${head(t("manualTitle"))}
     ${line(t("invno"),r.invNo)}
     ${line(t("date"),r.date)}
-    ${line(t("model"),r.models.map(m=>m.name+" ×"+m.qty).join(", "))}
+    ${line(t("model"),(r.models||[]).map(m=>m.name+" ×"+m.qty).join(", "))}
     ${line(t("qty"),r.qty)}
     ${line(t("total"),r.total?r.total+" SAR":"")}
     ${line(t("imei"),(r.imeis||[]).join(", "))}
+    ${head(t("aiTitle"))}
+    ${ai}
     <div class="chks">${chks}</div>`;
   $("#resultWrap").hidden=false;
   $("#resultWrap").scrollIntoView({behavior:"smooth",block:"nearest"});
@@ -843,15 +897,21 @@ function loadXLSX(){
 }
 $("#expx").onclick=async()=>{
   try{ await loadXLSX(); }catch(e){ toast(e.message); return; }
+  if(API.on()){ try{ const j=await API.call("list",{limit:5000},60000); if(j.records&&j.records.length) RECS=j.records; }
+                catch(e){ toast("历史拉取失败，导出当前已加载记录"); } }
   const ok=RECS.filter(r=>r.status==="approved");
 
   /* 1 · 台账 — one row per invoice */
   const ledger=[["单号 ID","提交时间 Submitted","工号 ID","促销员 Promoter","门店代码 Store code","门店 Store",
-    "状态 Status","风险分 Risk","命中规则 Flags","发票号 Invoice no.","发票日期 Invoice date","开票方 Seller",
-    "金额 Total","数量 Qty","机型 Models","IMEI","图片哈希 SHA-256","感知哈希 dHash","图片 Image"]]
+    "状态 Status","风险分 Risk","命中规则 Flags","录入方式 Entry","发票号 Invoice no.","发票日期 Invoice date","开票方 Seller",
+    "金额 Total","数量 Qty","机型 Models","IMEI",
+    "AI发票号 AI inv.","AI日期 AI date","AI机型 AI model","AI置信度 Conf.",
+    "图片哈希 SHA-256","感知哈希 dHash","图片 Image"]]
     .concat(RECS.map(r=>[r.id,r.ts,r.pid,r.pname,r.storeCode||"",r.pstore,r.status,r.risk,
-      (r.codes||[]).map(c=>(RULES[c]||{}).zh||c).join(" / "),r.invNo,r.date,r.seller,r.total,r.qty,
-      (r.models||[]).map(m=>m.name+"×"+m.qty).join(" / "),(r.imeis||[]).join(" / "),r.sha,r.dh,r.imageUrl||""]));
+      (r.codes||[]).map(c=>(RULES[c]||{}).zh||c).join(" / "),r.entryMode||"",r.invNo,r.date,r.seller,r.total,r.qty,
+      (r.models||[]).map(m=>m.name+"×"+m.qty).join(" / "),(r.imeis||[]).join(" / "),
+      r.aiInvNo||"",r.aiDate||"",r.aiModels||"",r.aiConf||"",
+      r.sha,r.dh,r.imageUrl||""]));
 
   /* 2 · 明细 — one row per model, this is the sell-out source of truth */
   const items=[["单号 ID","发票日期 Date","工号 ID","促销员 Promoter","门店 Store","机型代码 Code",
@@ -885,7 +945,7 @@ $("#expx").onclick=async()=>{
   add(sM,"机型汇总",[16,30,12]);
   add(sD,"日期汇总",[14,12]);
   add(items,"核销明细",[14,12,12,26,18,14,26,8,10,20,12]);
-  add(ledger,"发票台账",[14,20,12,26,18,18,10,8,34,16,12,26,10,8,28,22,20,18,30]);
+  add(ledger,"发票台账",[14,20,12,26,18,18,10,8,34,12,16,12,26,10,8,28,22,16,12,24,9,20,18,30]);
   XLSX.writeFile(wb,"Jarir_invoice_sellout_"+new Date().toISOString().slice(0,10)+".xlsx");
   toast("Excel ✓");
 };
@@ -934,6 +994,11 @@ $("#lock").onclick=()=>lockAdmin();
 $("#reload").onclick=async()=>{ await DB.load(); refresh(); toast("↻"); };
 
 /* ══ shell ══ */
+function fillModels(){
+  $("#mModel").innerHTML='<option value=""></option>'+
+    CFG.models.map(m=>`<option value="${m[0]}">${m[1]} — ${m[0]}</option>`).join("");
+  if(!$("#mDate").value) $("#mDate").value=new Date().toISOString().slice(0,10);
+}
 function fillPromoters(){
   $("#pSel").innerHTML=CFG.promoters.map(p=>`<option value="${p[0]}">${p[1]} — ${p[0]}</option>`).join("");
   syncStore();
@@ -999,9 +1064,9 @@ function strip(c){ const o={...c}; delete o.pin; return o; }
   if(BUILD.api){ CFG.api=BUILD.api; CFG.token=BUILD.token; CFG.pin=""; }  /* shipped config always wins */
 
   /* paint first — the store must be usable before the network answers */
-  fillPromoters(); fillSettings(); setLang("zh"); netBadge();
+  fillPromoters(); fillModels(); fillSettings(); setLang("zh"); netBadge();
 
-  try{ await bootstrap(); fillPromoters(); }
+  try{ await bootstrap(); fillPromoters(); fillModels(); }
   catch(e){ console.warn("bootstrap failed, using built-in lists:",e); toast("后端未响应，暂用内置名单"); }
   try{ await DB.load(); }catch(e){ console.warn(e); }
   refresh(); netBadge();
