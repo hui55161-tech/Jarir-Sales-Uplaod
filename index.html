@@ -141,6 +141,7 @@ table{border-collapse:collapse;width:100%;font-size:13px}
 th,td{padding:9px 11px;text-align:start;border-bottom:1px solid var(--line);white-space:nowrap}
 th{font-family:var(--mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);background:var(--panel-2)}
 tbody tr:hover{background:rgba(180,70,15,.055)}
+#myTbl td:last-child{white-space:normal;max-width:340px}
 td.num,th.num{text-align:end;font-family:var(--mono)}
 .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-family:var(--mono);letter-spacing:.05em}
 .pill.approved{background:rgba(27,110,63,.14);color:var(--pass)}
@@ -341,7 +342,8 @@ nav button[hidden]{display:none}
    ═══════════════════════════════════════════════════════════════════ */
 const BUILD = {
   api:   "https://script.google.com/macros/s/AKfycbyri6JRvU-iTC8tmJp29jGbVVCIFPIfVpYMdVsUPoXG2hJU4xhcHHFIryq5dPt32mDw5w/exec",  
-  token: "TECNO-JARIR-2026"
+  token: "TECNO-JARIR-2026",
+  pin:   "2468"    // ← Config 表里的 admin_pin，自动带上，管理员不用手输
 };
 
 /* ══════════════════════════════════════════════════════════════
@@ -486,7 +488,10 @@ const FALLBACK_MODELS=[
   ["LK7 256+8","POVA 8 Pro",1799],
   ["LK7 256+12","POVA 8 Pro",1999],
   ["KN4 128+4","Spark 50 4G",699],
-  ["KN4 256+4","Spark 50 4G",799]
+  ["KN4 256+4","Spark 50 4G",799],
+  ["KN8 128+4","Spark 50 5G",699],
+  ["KN8 256+4","Spark 50 5G",799],
+  ["KN8 256+8","Spark 50 5G",899]
 ];
 const FALLBACK_PROMOTERS=[
   ["17600305","SHATHA MOHAMMED A ABBAS","CR-JARIR-OLAYA","Jarir Olaya","Jarir"],
@@ -743,11 +748,24 @@ $("#go").onclick=async()=>{
       try{
         const pre=await API.call("precheck",{sha,dh});
         if(pre.dup){
-          step(2,"done");
-          showReceipt({id:pre.hit||"—",status:"rejected",risk:100,codes:pre.codes||["dup_file"],
-            invNo:man.invNo,date:man.date,seller:pre.seller||"",total:man.total,qty:man.qty,
-            models:man.models,imeis:man.imeis,pstore:p[3],ai:null});
-          FILES=[];renderThumbs(); return;
+          /* still filed — a re-upload attempt is exactly what the ledger should keep */
+          step(2,"done"); step(4,"on");
+          let dupRec={
+            id:"INV"+Date.now().toString(36).toUpperCase(),ts:new Date().toISOString(),
+            pid:p[0],pname:p[1],storeCode:p[2],pstore:p[3],channel:p[4]||"Jarir",
+            sha,dh,thumb,invNo:man.invNo,date:man.date,qty:man.qty,total:man.total,
+            models:man.models,imeis:man.imeis,seller:pre.seller||p[3],vat:0,conf:null,docType:"",
+            entryMode:"manual only",aiInvNo:"",aiDate:"",aiModels:"",aiConf:"",aiError:"",
+            codes:pre.codes||["dup_file"],risk:100,status:"rejected",
+            notes:"重复上传，原单号 "+(pre.hit||"?")
+          };
+          try{ dupRec=await DB.add(dupRec,"")||dupRec; }
+          catch(err){ RECS.push(dupRec); await Store.set(KEY_REC,RECS); }
+          step(4,"done");
+          showReceipt(dupRec);
+          FILES=[];renderThumbs();
+          try{ await DB.load(); refresh(); }catch(e){}
+          return;
         }
       }catch(e){ console.warn("precheck skipped:",e.message); }
     }
@@ -777,7 +795,12 @@ $("#go").onclick=async()=>{
       codes:ev.codes,risk:ev.risk,status:ev.status,
       notes:ocr?((ocr.authenticity||{}).notes||""):""
     };
-    rec=await DB.add(rec,b64)||rec;
+    try{ rec=await DB.add(rec,b64)||rec; }
+    catch(err){
+      rec.status="review"; rec.notes=(rec.notes?rec.notes+" · ":"")+"后端写入失败，暂存本机："+err.message;
+      RECS.push(rec); await Store.set(KEY_REC,RECS);
+      toast("⚠ 后端未保存，已暂存本机，请截图告知管理员");
+    }
     step(4,"done");
     if(!ocr) toast(t("aiFail"));
     showReceipt(rec);
@@ -962,7 +985,7 @@ function renderMine(){
   const pid=$("#pSel").value;
   const mine=RECS.filter(r=>r.pid===pid).sort((a,b)=>b.ts.localeCompare(a.ts)).slice(0,20);
   $("#myTbl").innerHTML=`<thead><tr><th>${t("date")}</th><th>${t("invno")}</th><th>${t("model")}</th><th class="num">${t("qty")}</th><th>Status</th></tr></thead><tbody>`+
-   (mine.map(r=>`<tr><td class="mono">${r.date||"—"}</td><td class="mono">${r.invNo||"—"}</td><td>${r.models.map(m=>m.name).join(", ")||"—"}</td><td class="num">${r.qty}</td><td><span class="pill ${r.status}">${t(r.status)}</span></td></tr>`).join("")
+   (mine.map(r=>`<tr><td class="mono">${r.date||"—"}</td><td class="mono">${r.invNo||"—"}</td><td>${r.models.map(m=>m.name).join(", ")||"—"}</td><td class="num">${r.qty}</td><td><span class="pill ${r.status}">${t(r.status)}</span>${(r.codes||[]).length?`<div class="small muted">${r.codes.map(c=>(RULES[c]||{})[LANG]||c).join(" · ")}</div>`:""}</td></tr>`).join("")
     || `<tr><td colspan="5" class="muted">${t("empty")}</td></tr>`)+`</tbody>`;
 }
 
@@ -1014,19 +1037,17 @@ $("#pSel").onchange=syncStore;
    opens only after 5 taps within 4 seconds, then an optional PIN.      */
 let taps=0,tapT=null;
 function lockAdmin(){
-  UNLOCKED=false; taps=0; CFG.pin="";
+  UNLOCKED=false; taps=0; CFG.pin=BUILD.pin||"";
   $("#bRev").hidden=true; $("#bDat").hidden=true;
   showView("up"); toast(t("locked"));
 }
 async function unlockAdmin(){
-  const v=window.prompt(t("pin"));
-  if(v===null||v==="") return;
-  if(API.on()){
-    try{ await API.call("auth",{pin:v}); }
-    catch(e){ toast("✕ "+e.message); return; }
-  }else if(CFG.pin && v!==CFG.pin){ toast("✕"); return; }
-  CFG.pin=v;                    /* in memory for this session only — never stored, never shipped */
+  /* five taps is the whole gate — the PIN rides along from BUILD */
   UNLOCKED=true; $("#bRev").hidden=false; $("#bDat").hidden=false; showView("set");
+  if(API.on()){
+    try{ await API.call("auth",{pin:CFG.pin}); }
+    catch(e){ toast("⚠ PIN 与 Config 不一致，审核操作会被拒绝"); }
+  }
 }
 function showView(v){
   $$("nav button").forEach(x=>x.classList.toggle("on",x.dataset.v===v));
@@ -1061,7 +1082,7 @@ function refresh(){
 function strip(c){ const o={...c}; delete o.pin; return o; }
 (async function init(){
   CFG={...DEFAULT_CFG,...(await Store.get(KEY_CFG,{}))};
-  if(BUILD.api){ CFG.api=BUILD.api; CFG.token=BUILD.token; CFG.pin=""; }  /* shipped config always wins */
+  if(BUILD.api){ CFG.api=BUILD.api; CFG.token=BUILD.token; CFG.pin=BUILD.pin||""; }  /* shipped config always wins */
 
   /* paint first — the store must be usable before the network answers */
   fillPromoters(); fillModels(); fillSettings(); setLang("zh"); netBadge();
