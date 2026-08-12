@@ -102,6 +102,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--stamp);box-shadow:0 0
 
 /* ── progress tape ──────────────────────── */
 .tape{display:flex;flex-direction:column;gap:6px;margin-top:14px;font-family:var(--mono);font-size:12.5px}
+.tape[hidden]{display:none}
 .tape div{display:flex;gap:8px;color:var(--muted)}
 .tape div.on{color:var(--text)}
 .tape div.done b{color:var(--pass)}
@@ -479,9 +480,16 @@ let CFG={...DEFAULT_CFG}, RECS=[], FILES=[], UNLOCKED=false;
 const API={
   get url(){return (CFG.api||"").trim()},
   on(){return !!this.url},
-  async call(action,payload){
-    const r=await fetch(this.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
-      body:JSON.stringify(Object.assign({action,token:CFG.token,pin:CFG.pin},payload||{}))});
+  async call(action,payload,ms){
+    const ac=new AbortController();
+    const timer=setTimeout(()=>ac.abort(),ms||(["ocr","submit"].includes(action)?90000:20000));
+    let r;
+    try{
+      r=await fetch(this.url,{method:"POST",signal:ac.signal,headers:{"Content-Type":"text/plain;charset=utf-8"},
+        body:JSON.stringify(Object.assign({action,token:CFG.token,pin:CFG.pin},payload||{}))});
+    }catch(e){
+      throw new Error(e.name==="AbortError"?"后端超时未响应 Backend timed out":e.message);
+    }finally{ clearTimeout(timer); }
     const txt=await r.text();
     let j; try{ j=JSON.parse(txt); }catch(e){ throw new Error("Bad response: "+txt.slice(0,120)); }
     if(!j.ok) throw new Error(j.error||"API error");
@@ -989,9 +997,14 @@ function strip(c){ const o={...c}; delete o.pin; return o; }
 (async function init(){
   CFG={...DEFAULT_CFG,...(await Store.get(KEY_CFG,{}))};
   if(BUILD.api){ CFG.api=BUILD.api; CFG.token=BUILD.token; CFG.pin=""; }  /* shipped config always wins */
-  try{ await bootstrap(); }catch(e){ console.warn("bootstrap",e); }
-  await DB.load();
+
+  /* paint first — the store must be usable before the network answers */
   fillPromoters(); fillSettings(); setLang("zh"); netBadge();
+
+  try{ await bootstrap(); fillPromoters(); }
+  catch(e){ console.warn("bootstrap failed, using built-in lists:",e); toast("后端未响应，暂用内置名单"); }
+  try{ await DB.load(); }catch(e){ console.warn(e); }
+  refresh(); netBadge();
 })();
 </script>
 </body>
