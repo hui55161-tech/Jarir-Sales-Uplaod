@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TECNO KSA · Jarir Invoice Verification</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0E141A;          /* console ground */
+  --panel:#171F27;
+  --panel-2:#1E2831;
+  --line:rgba(255,255,255,.10);
+  --line-strong:rgba(255,255,255,.20);
+  --text:#E8EDF2;
+  --muted:#8B9AA8;
+  --paper:#FBFAF6;        /* receipt material */
+  --paper-ink:#1A1A18;
+  --stamp:#4C4FD5;        /* verification ink */
+  --pass:#1F9D5B;
+  --review:#D98A0B;
+  --fail:#D94141;
+  --r:10px;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:"IBM Plex Sans Arabic","Noto Sans SC",system-ui,-apple-system,Segoe UI,sans-serif;
+  --cond:"IBM Plex Sans Condensed","IBM Plex Sans Arabic","Noto Sans SC",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ink);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;padding-bottom:64px;
+}
+body[dir="rtl"]{font-family:"IBM Plex Sans Arabic",var(--sans)}
+h1,h2,h3{font-family:var(--cond);letter-spacing:.01em;margin:0}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+a{color:#8FA6FF}
+
+/* ── header ─────────────────────────────── */
+header{
+  position:sticky;top:0;z-index:40;background:rgba(14,20,26,.94);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);
+}
+.hbar{display:flex;align-items:center;gap:12px;padding:12px 16px;max-width:1180px;margin:0 auto}
+.brand{font-family:var(--cond);font-weight:700;font-size:17px;letter-spacing:.06em;text-transform:uppercase}
+.brand span{color:var(--stamp)}
+.sub{font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.spacer{flex:1}
+.langs{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.langs button{background:none;border:0;padding:5px 11px;font-size:12px;color:var(--muted);cursor:pointer}
+.langs button.on{background:var(--stamp);color:#fff}
+nav{display:flex;gap:2px;padding:0 12px 0;max-width:1180px;margin:0 auto;overflow-x:auto;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button{
+  background:none;border:0;border-bottom:2px solid transparent;padding:10px 14px;color:var(--muted);
+  cursor:pointer;white-space:nowrap;font-size:14px
+}
+nav button.on{color:var(--text);border-bottom-color:var(--stamp)}
+nav button .n{font-family:var(--mono);font-size:11px;background:var(--review);color:#241a00;border-radius:999px;padding:1px 6px;margin-inline-start:6px}
+
+main{max-width:1180px;margin:0 auto;padding:20px 16px 40px}
+.view{display:none}.view.on{display:block}
+
+/* ── panels ─────────────────────────────── */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.card+.card{margin-top:14px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+label.f{display:block;margin-bottom:10px}
+label.f>span{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+input,select,textarea{
+  width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:9px 11px;outline:none
+}
+input:focus,select:focus,textarea:focus{border-color:var(--stamp);box-shadow:0 0 0 3px rgba(76,79,213,.22)}
+.btn{
+  background:var(--stamp);color:#fff;border:0;border-radius:8px;padding:11px 18px;font-weight:600;cursor:pointer;
+}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:transparent;border:1px solid var(--line-strong);color:var(--text)}
+.btn.ok{background:var(--pass)}
+.btn.no{background:var(--fail)}
+.btn.sm{padding:6px 12px;font-size:13px;border-radius:7px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.muted{color:var(--muted)}
+.mono{font-family:var(--mono)}
+.small{font-size:12.5px}
+
+/* ── dropzone ───────────────────────────── */
+.drop{
+  border:1.5px dashed var(--line-strong);border-radius:var(--r);padding:30px 18px;text-align:center;
+  cursor:pointer;transition:.15s;background:
+    repeating-linear-gradient(45deg,rgba(255,255,255,.014) 0 10px,transparent 10px 20px);
+}
+.drop:hover,.drop.over{border-color:var(--stamp);background:rgba(76,79,213,.08)}
+.drop .big{font-family:var(--cond);font-size:19px;margin-bottom:4px}
+.thumbs{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.thumb{position:relative;width:96px;height:120px;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.thumb button{position:absolute;top:4px;inset-inline-end:4px;background:rgba(0,0,0,.7);border:0;color:#fff;border-radius:6px;width:22px;height:22px;cursor:pointer;line-height:1}
+
+/* ── progress tape ──────────────────────── */
+.tape{display:flex;flex-direction:column;gap:6px;margin-top:14px;font-family:var(--mono);font-size:12.5px}
+.tape div{display:flex;gap:8px;color:var(--muted)}
+.tape div.on{color:var(--text)}
+.tape div.done b{color:var(--pass)}
+.tape b{width:16px;display:inline-block}
+
+/* ── receipt result ─────────────────────── */
+.receipt{
+  background:var(--paper);color:var(--paper-ink);border-radius:4px;padding:18px 16px 22px;position:relative;
+  box-shadow:0 10px 30px rgba(0,0,0,.4);overflow:hidden;
+}
+.receipt::before,.receipt::after{
+  content:"";position:absolute;inset-inline:0;height:8px;
+  background:radial-gradient(circle at 6px 0,transparent 5px,var(--paper) 5px) 0 0/12px 8px repeat-x;
+}
+.receipt::before{top:-8px;transform:rotate(180deg)}
+.receipt::after{bottom:-8px}
+.receipt h3{font-size:15px;letter-spacing:.1em;text-transform:uppercase;border-bottom:1px dashed #bbb6a8;padding-bottom:8px;margin-bottom:10px}
+.kv{display:flex;justify-content:space-between;gap:12px;font-family:var(--mono);font-size:12.5px;padding:3px 0;border-bottom:1px dotted #ddd8cb}
+.kv b{font-weight:500}
+.chks{margin-top:12px;font-family:var(--mono);font-size:12px}
+.chk{display:flex;gap:8px;padding:4px 0;border-bottom:1px dotted #ddd8cb;align-items:flex-start}
+.chk .i{width:14px;font-weight:700}
+.chk.pass .i{color:var(--pass)}.chk.warn .i{color:#a86f00}.chk.fail .i{color:var(--fail)}
+.chk .d{color:#6b6459}
+.stamp{
+  position:absolute;top:18px;inset-inline-end:10px;transform:rotate(-13deg);
+  border:3px double currentColor;border-radius:6px;padding:5px 10px;font-family:var(--cond);font-weight:700;
+  font-size:15px;letter-spacing:.12em;text-transform:uppercase;opacity:.86
+}
+.stamp.approved{color:var(--pass)}.stamp.review{color:#B3730A}.stamp.rejected{color:var(--fail)}
+.stamp small{display:block;font-family:var(--mono);font-size:8.5px;letter-spacing:.06em;font-weight:400;text-align:center}
+
+/* ── tables ─────────────────────────────── */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:9px 11px;text-align:start;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);background:var(--panel-2)}
+tbody tr:hover{background:rgba(255,255,255,.03)}
+td.num,th.num{text-align:end;font-family:var(--mono)}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-family:var(--mono);letter-spacing:.05em}
+.pill.approved{background:rgba(31,157,91,.18);color:#5fd39a}
+.pill.review{background:rgba(217,138,11,.18);color:#f0b54e}
+.pill.rejected{background:rgba(217,65,65,.18);color:#f08a8a}
+
+/* ── kpi ────────────────────────────────── */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.kpi .v{font-family:var(--cond);font-size:30px;line-height:1.1}
+.kpi .l{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.kpi.pass .v{color:#5fd39a}.kpi.review .v{color:#f0b54e}.kpi.fail .v{color:#f08a8a}
+
+/* ── review queue ───────────────────────── */
+.qitem{display:grid;grid-template-columns:110px 1fr;gap:14px;border:1px solid var(--line);border-radius:var(--r);padding:12px;background:var(--panel)}
+.qitem+.qitem{margin-top:12px}
+.qitem img{width:110px;height:150px;object-fit:cover;border-radius:8px;background:#000;cursor:zoom-in}
+@media(max-width:560px){.qitem{grid-template-columns:1fr}.qitem img{width:100%;height:220px}}
+
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:90;padding:20px}
+.modal.on{display:flex}
+.modal img{max-width:100%;max-height:90vh;border-radius:8px}
+.toast{position:fixed;inset-inline:0;bottom:18px;margin:auto;width:max-content;max-width:90vw;background:var(--panel-2);border:1px solid var(--line-strong);border-radius:999px;padding:10px 18px;z-index:95;display:none}
+.toast.on{display:block}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--fail);margin-inline-end:6px}
+.dot.on{background:var(--pass)}
+nav button[hidden]{display:none}
+.note{border-inline-start:3px solid var(--stamp);padding:8px 12px;background:rgba(76,79,213,.08);border-radius:0 8px 8px 0;font-size:13px;color:#c9d3de}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hbar">
+    <div>
+      <div class="brand">TECNO<span>·</span>JARIR</div>
+      <div class="sub" data-i="hsub">Invoice Verification</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="langs">
+      <button data-lang="zh">中文</button><button data-lang="en">EN</button><button data-lang="ar">عربي</button>
+    </div>
+  </div>
+  <nav>
+    <button data-v="up" class="on" data-i="navUp">Upload</button>
+    <button data-v="rev" id="bRev" hidden data-i="navRev">Review<span class="n" id="qn">0</span></button>
+    <button data-v="dat" id="bDat" hidden data-i="navDat">Sell-out</button>
+    <button data-v="set" data-i="navSet">Settings</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- ══ UPLOAD ══ -->
+<section class="view on" id="v-up">
+  <div class="card">
+    <div class="eyebrow" data-i="who">Promoter</div>
+    <div class="grid2">
+      <label class="f"><span data-i="pName">Promoter</span>
+        <select id="pSel"></select></label>
+      <label class="f"><span data-i="pStore">Store</span>
+        <input id="pStore" readonly></label>
+    </div>
+    <div class="small muted"><span class="dot" id="netDot"></span><span id="netTxt"></span></div>
+  </div>
+
+  <div class="card">
+    <div class="eyebrow" data-i="upTitle">Invoice photo</div>
+    <div class="drop" id="drop">
+      <div class="big" data-i="dropBig">Tap to take a photo of the invoice</div>
+      <div class="muted small" data-i="dropSub">Include the store name, invoice number, date, model and IMEI in one clear shot.</div>
+      <input type="file" id="file" accept="image/*" capture="environment" hidden>
+    </div>
+    <div class="thumbs" id="thumbs"></div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" id="go" disabled data-i="btnGo">Verify & submit</button>
+      <span class="muted small" id="engineHint"></span>
+    </div>
+    <div class="tape" id="tape" hidden>
+      <div data-s="1"><b>·</b><span data-i="s1">Reading image / hashing</span></div>
+      <div data-s="2"><b>·</b><span data-i="s2">Reading invoice fields</span></div>
+      <div data-s="3"><b>·</b><span data-i="s3">Duplicate check</span></div>
+      <div data-s="4"><b>·</b><span data-i="s4">Risk rules</span></div>
+    </div>
+  </div>
+
+  <div class="card" id="resultWrap" hidden>
+    <div class="eyebrow" data-i="resTitle">Result</div>
+    <div class="receipt" id="receipt"></div>
+  </div>
+
+  <div class="card">
+    <div class="eyebrow" data-i="myTitle">My submissions</div>
+    <div class="tw"><table id="myTbl"><tbody></tbody></table></div>
+  </div>
+</section>
+
+<!-- ══ REVIEW ══ -->
+<section class="view" id="v-rev">
+  <div class="card">
+    <div class="row">
+      <div class="eyebrow" style="margin:0" data-i="qTitle">Manual review queue</div>
+      <div class="spacer"></div>
+      <button class="btn ghost sm" id="reload" data-i="reload">Reload</button>
+      <select id="qFilter" style="width:auto">
+        <option value="review">Review</option>
+        <option value="rejected">Rejected</option>
+        <option value="approved">Approved</option>
+        <option value="all">All</option>
+      </select>
+    </div>
+  </div>
+  <div id="queue"></div>
+</section>
+
+<!-- ══ DATA ══ -->
+<section class="view" id="v-dat">
+  <div class="kpis" id="kpis"></div>
+  <div class="card" style="margin-top:14px">
+    <div class="row">
+      <div class="eyebrow" style="margin:0" data-i="byP">Sell-out by promoter</div>
+      <div class="spacer"></div>
+      <button class="btn sm" id="expx" data-i="expx">Export Excel</button>
+      <button class="btn ghost sm" id="exp" data-i="exp">Export CSV</button>
+    </div>
+    <div class="tw" style="margin-top:10px"><table id="tblP"></table></div>
+  </div>
+  <div class="card">
+    <div class="eyebrow" data-i="byM">Sell-out by model</div>
+    <div class="tw"><table id="tblM"></table></div>
+  </div>
+  <div class="card">
+    <div class="eyebrow" data-i="byD">Sell-out by date</div>
+    <div class="tw"><table id="tblD"></table></div>
+  </div>
+</section>
+
+<!-- ══ SETTINGS — unlocked by tapping the tab 5× ══ -->
+<section class="view" id="v-set">
+  <div class="card">
+    <div class="eyebrow" data-i="setApi">Backend (Google Sheets)</div>
+    <label class="f"><span data-i="apiUrl">Apps Script web app URL</span><input id="apiUrl" class="mono small" placeholder="https://script.google.com/macros/s/..../exec"></label>
+    <div class="grid2">
+      <label class="f"><span data-i="apiTok">App token</span><input id="apiTok" class="mono small"></label>
+      <label class="f"><span data-i="apiPin">Admin PIN</span><input id="apiPin" type="password" class="mono small"></label>
+    </div>
+    <div class="row"><button class="btn ghost sm" id="test" data-i="test">Test connection</button><span class="small muted" id="testOut"></span></div>
+    <div class="note" style="margin-top:10px" data-i="apiNote">Models, promoters, campaign dates and thresholds are maintained in the Google Sheet.</div>
+  </div>
+
+  <div class="card">
+    <div class="eyebrow" data-i="setLocal">Local fallback (used when no backend)</div>
+    <div class="grid2">
+      <label class="f"><span data-i="cStart">Valid invoice date from</span><input type="date" id="cStart"></label>
+      <label class="f"><span data-i="cEnd">Valid invoice date to</span><input type="date" id="cEnd"></label>
+      <label class="f"><span data-i="cAuto">Auto-approve if risk below</span><input type="number" id="cAuto" min="0" max="100"></label>
+      <label class="f"><span data-i="cRej">Auto-reject if risk at or above</span><input type="number" id="cRej" min="0" max="100"></label>
+      <label class="f"><span data-i="cPrice">Price floor (% of RRP)</span><input type="number" id="cPrice" min="0" max="100"></label>
+      <label class="f"><span data-i="cImei">IMEI required</span><select id="cImei"><option value="1">Yes</option><option value="0">No</option></select></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="eyebrow" data-i="setEng">Recognition engine</div>
+    <label class="f"><span data-i="engEnd">API endpoint</span><input id="engEnd" class="mono small"></label>
+    <label class="f"><span data-i="engKey">API key (self-hosted only)</span><input id="engKey" type="password" class="mono small" placeholder="sk-ant-..."></label>
+    <div class="note" data-i="engNote">Route recognition through the backend so no key sits in the browser.</div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <button class="btn" id="save" data-i="save">Save settings</button>
+      <button class="btn ghost" id="lock" data-i="lock">Lock settings</button>
+      <button class="btn ghost" id="wipe" data-i="wipe">Clear local records</button>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<div class="modal" id="modal"><img id="modalImg" alt=""></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   i18n — promoter flow is fully trilingual; admin falls back to EN
+   ══════════════════════════════════════════════════════════════ */
+const I18N = {
+ zh:{hsub:"Jarir 发票核销",navUp:"上传",navRev:"人工审核",navDat:"销量",navSet:"设置",
+   who:"促销员",pName:"促销员",pStore:"门店",upTitle:"发票照片",
+   dropBig:"点击拍摄 / 选择发票照片",dropSub:"一张照片要能同时看清：门店名、发票号、日期、机型、IMEI。可加传一张 IMEI 串码贴纸。",
+   btnGo:"识别并提交",s1:"读取图片、计算指纹",s2:"快速查重",s3:"识别发票字段",s4:"风险判定并归档",
+   resTitle:"核销结果",myTitle:"我的提交记录",qTitle:"待人工审核",reload:"刷新",
+   byP:"促销员销量",byM:"机型销量",byD:"按日期",exp:"导出 CSV",expx:"导出 Excel",
+   setApi:"后端（Google Sheets）",apiUrl:"Apps Script 部署地址",apiTok:"应用令牌 Token",apiPin:"管理 PIN",test:"测试连接",
+   apiNote:"机型清单、促销员名单、活动周期、风险阈值全部在 Google Sheet 里维护，本页不再提供。",
+   setLocal:"本地兜底参数（未接后端时生效）",cStart:"有效发票日期从",cEnd:"有效发票日期至",
+   cAuto:"风险分低于此值自动通过",cRej:"风险分高于此值自动拒绝",cPrice:"价格下限（RRP 的 %）",cImei:"必须有 IMEI",
+   setEng:"识别引擎",engEnd:"接口地址",engKey:"API Key（自建时才需要）",
+   engNote:"建议识别请求走 Apps Script 后端转发，浏览器里不放 Key。",
+   save:"保存设置",lock:"锁定设置",wipe:"清空本地记录",
+   approved:"已通过",review:"待审核",rejected:"已拒绝",ok:"已保存",need:"请先选择促销员并上传发票照片",
+   qty:"数量",model:"机型",date:"发票日期",invno:"发票号",store:"门店",total:"金额",imei:"IMEI",risk:"风险分",
+   btnOk:"通过",btnNo:"拒绝",empty:"暂无记录",
+   kUnits:"核销销量（台）",kInv:"通过发票数",kRev:"待审核",kRej:"已拒绝",kDup:"查出重复",
+   netOn:"已连接后端 Sheets",netOff:"本地模式（未连后端，仅本机查重）",locked:"设置已锁定",pin:"请输入管理 PIN"},
+ en:{hsub:"Jarir Invoice Verification",navUp:"Upload",navRev:"Review",navDat:"Sell-out",navSet:"Settings",
+   who:"Promoter",pName:"Promoter",pStore:"Store",upTitle:"Invoice photo",
+   dropBig:"Tap to photograph the invoice",dropSub:"One clear shot showing store name, invoice number, date, model and IMEI. You may add a second photo of the IMEI label.",
+   btnGo:"Verify & submit",s1:"Reading image, building fingerprint",s2:"Fast duplicate check",s3:"Reading invoice fields",s4:"Risk rules & filing",
+   resTitle:"Result",myTitle:"My submissions",qTitle:"Manual review queue",reload:"Reload",
+   byP:"Sell-out by promoter",byM:"Sell-out by model",byD:"Sell-out by date",exp:"Export CSV",expx:"Export Excel",
+   setApi:"Backend (Google Sheets)",apiUrl:"Apps Script web app URL",apiTok:"App token",apiPin:"Admin PIN",test:"Test connection",
+   apiNote:"Models, promoters, campaign dates and thresholds are maintained in the Google Sheet.",
+   setLocal:"Local fallback (used when no backend)",cStart:"Valid invoice date from",cEnd:"Valid invoice date to",
+   cAuto:"Auto-approve if risk below",cRej:"Auto-reject if risk at or above",cPrice:"Price floor (% of RRP)",cImei:"IMEI required",
+   setEng:"Recognition engine",engEnd:"API endpoint",engKey:"API key (self-hosted only)",
+   engNote:"Route recognition through the backend so no key sits in the browser.",
+   save:"Save settings",lock:"Lock settings",wipe:"Clear local records",
+   approved:"Approved",review:"Review",rejected:"Rejected",ok:"Saved",need:"Pick your name and add an invoice photo first",
+   qty:"Qty",model:"Model",date:"Invoice date",invno:"Invoice no.",store:"Store",total:"Total",imei:"IMEI",risk:"Risk",
+   btnOk:"Approve",btnNo:"Reject",empty:"Nothing yet",
+   kUnits:"Verified units",kInv:"Approved invoices",kRev:"In review",kRej:"Rejected",kDup:"Duplicates caught",
+   netOn:"Connected to the Sheets backend",netOff:"Local mode — duplicates checked on this device only",locked:"Settings locked",pin:"Enter admin PIN"},
+ ar:{hsub:"التحقق من فواتير جرير",navUp:"رفع",navRev:"المراجعة",navDat:"المبيعات",navSet:"الإعدادات",
+   who:"المروّج",pName:"المروّج",pStore:"المعرض",upTitle:"صورة الفاتورة",
+   dropBig:"اضغط لتصوير الفاتورة",dropSub:"صورة واضحة تُظهر اسم المعرض ورقم الفاتورة والتاريخ والموديل ورقم IMEI. يمكن إضافة صورة ثانية لملصق IMEI.",
+   btnGo:"تحقق وأرسل",s1:"قراءة الصورة وإنشاء البصمة",s2:"فحص سريع للتكرار",s3:"قراءة بيانات الفاتورة",s4:"قواعد المخاطر والحفظ",
+   resTitle:"النتيجة",myTitle:"طلباتي",qTitle:"قائمة المراجعة",reload:"تحديث",
+   byP:"المبيعات حسب المروّج",byM:"حسب الموديل",byD:"حسب التاريخ",exp:"تصدير CSV",expx:"تصدير Excel",
+   setApi:"الخادم",apiUrl:"عنوان الخدمة",apiTok:"رمز التطبيق",apiPin:"رمز الإدارة",test:"اختبار الاتصال",
+   apiNote:"تتم إدارة الموديلات والمروّجين والفترة والحدود في Google Sheet.",
+   setLocal:"إعدادات محلية",cStart:"تاريخ الفاتورة من",cEnd:"تاريخ الفاتورة إلى",
+   cAuto:"قبول تلقائي إذا كانت المخاطر أقل من",cRej:"رفض تلقائي إذا كانت المخاطر أكبر من",cPrice:"الحد الأدنى للسعر (%)",cImei:"IMEI إلزامي",
+   setEng:"محرك القراءة",engEnd:"عنوان الخدمة",engKey:"مفتاح API",engNote:"مرّر القراءة عبر الخادم.",
+   save:"حفظ",lock:"قفل الإعدادات",wipe:"حذف السجلات المحلية",
+   approved:"مقبولة",review:"قيد المراجعة",rejected:"مرفوضة",ok:"تم الحفظ",need:"اختر اسمك وأضف صورة الفاتورة أولاً",
+   qty:"الكمية",model:"الموديل",date:"تاريخ الفاتورة",invno:"رقم الفاتورة",store:"المعرض",total:"الإجمالي",imei:"IMEI",risk:"المخاطر",
+   btnOk:"قبول",btnNo:"رفض",empty:"لا توجد سجلات",
+   kUnits:"الوحدات المعتمدة",kInv:"فواتير مقبولة",kRev:"قيد المراجعة",kRej:"مرفوضة",kDup:"تكرارات",
+   netOn:"متصل بالخادم",netOff:"وضع محلي",locked:"الإعدادات مقفلة",pin:"أدخل رمز الإدارة"}
+};
+let LANG = "zh";
+const t = k => (I18N[LANG][k] ?? I18N.en[k] ?? k);
+
+/* check-rule labels, trilingual */
+const RULES = {
+ not_invoice:{w:70,zh:"图片不是有效发票",en:"Not a valid invoice",ar:"الصورة ليست فاتورة صالحة"},
+ dup_file:{w:60,zh:"同一张图片已上传过",en:"Same image file already uploaded",ar:"نفس الصورة مرفوعة مسبقاً"},
+ dup_image:{w:55,zh:"图片与已有记录高度相似（裁剪/重拍）",en:"Image nearly identical to an existing record",ar:"الصورة تشبه سجلاً موجوداً"},
+ dup_invoice:{w:60,zh:"发票号已被使用",en:"Invoice number already used",ar:"رقم الفاتورة مستخدم"},
+ dup_imei:{w:60,zh:"IMEI 已被核销",en:"IMEI already counted",ar:"رقم IMEI محتسب مسبقاً"},
+ dup_fuzzy:{w:25,zh:"同门店同日同机型同金额，疑似重复",en:"Same store/date/model/amount — possible duplicate",ar:"احتمال تكرار"},
+ edit_traces:{w:50,zh:"疑似 PS 修改痕迹",en:"Signs of digital editing",ar:"آثار تعديل رقمي"},
+ screen_recapture:{w:35,zh:"疑似翻拍屏幕",en:"Looks like a photo of a screen",ar:"يبدو أنها صورة لشاشة"},
+ screenshot:{w:20,zh:"是截图而非实物发票",en:"Screenshot, not a physical invoice",ar:"لقطة شاشة"},
+ handwritten:{w:20,zh:"手写单据，需人工确认",en:"Handwritten document",ar:"مستند مكتوب بخط اليد"},
+ blurry:{w:10,zh:"图片模糊，关键字段不清",en:"Blurry / key fields unclear",ar:"الصورة غير واضحة"},
+ low_conf:{w:15,zh:"识别置信度低",en:"Low reading confidence",ar:"ثقة قراءة منخفضة"},
+ date_missing:{w:30,zh:"未识别到发票日期",en:"No invoice date found",ar:"لا يوجد تاريخ"},
+ date_future:{w:45,zh:"发票日期晚于今天",en:"Invoice date is in the future",ar:"تاريخ مستقبلي"},
+ date_out:{w:40,zh:"发票日期不在活动周期内",en:"Invoice date outside the campaign window",ar:"التاريخ خارج فترة الحملة"},
+ date_old:{w:10,zh:"发票日期距今超过 7 天",en:"Invoice older than 7 days",ar:"الفاتورة أقدم من ٧ أيام"},
+ model_unknown:{w:20,zh:"机型不在核销清单内",en:"Model not on the eligible list",ar:"الموديل غير مؤهل"},
+ no_model:{w:35,zh:"未识别到机型",en:"No model found",ar:"لم يتم العثور على موديل"},
+ price_low:{w:20,zh:"成交价低于价格下限",en:"Price below the floor",ar:"السعر أقل من الحد"},
+ store_mismatch:{w:15,zh:"发票门店与促销员绑定门店不一致",en:"Invoice store differs from the promoter's store",ar:"المعرض لا يطابق"},
+ not_jarir:{w:45,zh:"发票不是 Jarir 开具",en:"Invoice is not from Jarir",ar:"الفاتورة ليست من جرير"},
+ no_imei:{w:10,zh:"发票上无 IMEI",en:"No IMEI on the invoice",ar:"لا يوجد IMEI"},
+ qty_high:{w:10,zh:"单张发票数量偏大，疑似批发",en:"Large quantity on one invoice",ar:"كمية كبيرة"},
+ invno_missing:{w:20,zh:"未识别到发票号",en:"No invoice number found",ar:"لا يوجد رقم فاتورة"}
+};
+
+/* ══════════════════════════════════════════════════════════════
+   Storage — window.storage inside Claude, localStorage when hosted
+   ══════════════════════════════════════════════════════════════ */
+const KEY_CFG="tiv_cfg", KEY_REC="tiv_records";
+const hasWS = typeof window!=="undefined" && window.storage && typeof window.storage.get==="function";
+const Store={
+  async get(k,def){
+    try{
+      if(hasWS){ const r=await window.storage.get(k,true); return r&&r.value?JSON.parse(r.value):def; }
+      const v=localStorage.getItem(k); return v?JSON.parse(v):def;
+    }catch(e){ return def; }
+  },
+  async set(k,v){
+    try{
+      if(hasWS){ await window.storage.set(k,JSON.stringify(v),true); return true; }
+      localStorage.setItem(k,JSON.stringify(v)); return true;
+    }catch(e){ toast("Storage error: "+e.message); return false; }
+  }
+};
+
+/* fallback lists — the authoritative copies live in the Google Sheet */
+const FALLBACK_MODELS=[
+  ["BG6 128+4","SPARK Go 2024",0],
+  ["BG7n 128+8","SPARK 20C",0],
+  ["KJ5N 256+8","SPARK 20",0],
+  ["BG7n 128+4","SPARK 20C",0],
+  ["KJ6 256+8","SPARK 20Pro",0],
+  ["BG6 64+3","SPARK Go 2024",0],
+  ["BG7n 256+4","SPARK 20C",0],
+  ["Li9 256+12","Prova 6Pro 5G",0],
+  ["KJ7 256+8","SPARK 20Pro+",0],
+  ["CL7 512+12","Camon 30 5G",0],
+  ["KJ8 256+8","Spark 20pro 5G",0],
+  ["Li9 256+8","Prova 6 Pro 5G",0],
+  ["CL7 256+8","Camon 30 5G",0],
+  ["BG6m 64+2","SPARK Go 2024",0],
+  ["KL4 64+3","SPARK Go 1",0],
+  ["KL4 128+4","SPARK Go 1",0],
+  ["KL8 256+8","SPARK 30 5G",0],
+  ["KL8h 128+4","SPARK 30c 5G",0],
+  ["KL5n 256+8","TECNO Spark 30c 8+256GB",0],
+  ["CM7 256+12","Camon 40 Pro 5G 12+256GB",0],
+  ["KM4 128+4","TECNO Spark GO",0],
+  ["KM4 64+3","TECNO Spark GO",0],
+  ["KM4 256+4","TECNO Spark GO 2",0],
+  ["KM4n 256+8","TECNO SPARK 40C",0],
+  ["LJ8K 256+8","POVA CURVE 5G",0],
+  ["KM9 256+8","POVA SLIM 5G",0],
+  ["KM8n 256+8","SPARK 40 5G",0],
+  ["KM8n 128+4","SPARK 40 5G",0],
+  ["KM5n 256+8","TECNO SPARK 40",0],
+  ["LJ7 256+8","Pova 7 5G",0],
+  ["AE10 512+12","TECNO PHANTOM V Fold2 5G",0],
+  ["LH8n 256+8","POVA 5 Pro 5G",0],
+  ["CL9 512+12","TECNO CAMON 30 Premier 5G",0],
+  ["CK9n 512+8","CAMON 20 Premier 5G",0],
+  ["KL4 64+4","TECNO SPARK Go 1",0],
+  ["KL4 128+3","TECNO SPARK Go 1",0],
+  ["AD9 256+12","PHANTOM X2 Pro 5G",0],
+  ["KM7 256+8","TECNO SPARK 40 Pro+",0],
+  ["KN3 64+4","TECNO SPARK GO3 4+64",0],
+  ["KN3 128+4","TECNO SPARK GO3 4+128",0],
+  ["LK7k 256+12","POVA Curve 2",0],
+  ["LK7k 256+8","POVA Curve 2",0],
+  ["CN7c 256+8","Camon 50 Ultra",0],
+  ["CN7c 256+12","Camon 50 Ultra",0],
+  ["LK6 256+8","POVA 8",0],
+  ["LK7 256+8","POVA 8 Pro",0],
+  ["LK7 256+12","POVA 8 Pro",0]
+];
+const FALLBACK_PROMOTERS=[
+  ["17600305","SHATHA MOHAMMED A ABBAS","CR-JARIR-OLAYA","Jarir Olaya","Jarir"],
+  ["17600518","MOHAMMED MUSHI A ALTHAFIR","CR-JARIR-KUHRAIS","Jarir Kuhrais","Jarir"],
+  ["17600528","EMTINAN SAAD M ALMUTAIRI","CR-JARIR-EXIT-25","Jarir Exit 25","Jarir"],
+  ["17600341","ARWA MOHAMMAD H ALHAWITI","CR-JARIR-TABUK","Jarir Tabuk","Jarir"],
+  ["17600467","SULAMAN KHALID S ALDHOBAI","ER-JARIR-FAISALYAH","Jarir Faisalyah","Jarir"]
+];
+const DEFAULT_CFG={
+  start:"2026-08-01", end:"2026-08-31", auto:20, rej:60, priceFloor:80, imeiRequired:1,
+  endpoint:"https://api.anthropic.com/v1/messages", apiKey:"",
+  api:"", token:"", pin:"",
+  models:FALLBACK_MODELS, promoters:FALLBACK_PROMOTERS
+};
+let CFG={...DEFAULT_CFG}, RECS=[], FILES=[], UNLOCKED=false;
+
+/* ══════════════════════════════════════════════════════════════
+   backend — Google Apps Script web app in front of Google Sheets
+   text/plain body keeps it a simple request (no CORS preflight)
+   ══════════════════════════════════════════════════════════════ */
+const API={
+  get url(){return (CFG.api||"").trim()},
+  on(){return !!this.url},
+  async call(action,payload){
+    const r=await fetch(this.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify(Object.assign({action,token:CFG.token,pin:CFG.pin},payload||{}))});
+    const txt=await r.text();
+    let j; try{ j=JSON.parse(txt); }catch(e){ throw new Error("Bad response: "+txt.slice(0,120)); }
+    if(!j.ok) throw new Error(j.error||"API error");
+    return j;
+  }
+};
+async function bootstrap(){
+  if(!API.on()) return;
+  const j=await API.call("bootstrap",{});
+  if(j.models&&j.models.length) CFG.models=j.models;
+  if(j.promoters&&j.promoters.length) CFG.promoters=j.promoters;
+  const c=j.config||{};
+  ["start","end"].forEach(k=>{ if(c[k]) CFG[k]=c[k]; });
+  ["auto","rej","priceFloor","imeiRequired"].forEach(k=>{ if(c[k]!==undefined&&c[k]!=="") CFG[k]=+c[k]; });
+}
+const DB={
+  async load(){
+    if(API.on()){
+      try{ const j=await API.call("list",{limit:300}); RECS=j.records||[]; return; }
+      catch(e){ toast("Backend: "+e.message); }
+    }
+    RECS=await Store.get(KEY_REC,[]);
+  },
+  async add(rec,imageB64){
+    if(API.on()){ const j=await API.call("submit",{record:rec,image:imageB64}); return j.record||rec; }
+    RECS=await Store.get(KEY_REC,[]); RECS.push(rec); await Store.set(KEY_REC,RECS); return rec;
+  },
+  async decide(id,status){
+    if(API.on()){ await API.call("decide",{id,status,actor:"manager"}); return; }
+    const r=RECS.find(x=>x.id===id);
+    if(r){ r.status=status; r.manual=true; r.decidedAt=new Date().toISOString(); }
+    await Store.set(KEY_REC,RECS);
+  }
+};
+
+/* ══════════════════════════════════════════════════════════════
+   image helpers — sha256 (original bytes) + dHash (perceptual)
+   ══════════════════════════════════════════════════════════════ */
+async function sha256(buf){
+  const h=await crypto.subtle.digest("SHA-256",buf);
+  return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+function loadImg(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
+async function dHash(img){
+  const c=document.createElement("canvas");c.width=9;c.height=8;
+  const x=c.getContext("2d");x.drawImage(img,0,0,9,8);
+  const d=x.getImageData(0,0,9,8).data; let bits="";
+  for(let y=0;y<8;y++)for(let i=0;i<8;i++){
+    const a=(y*9+i)*4,b=(y*9+i+1)*4;
+    const ga=d[a]*.299+d[a+1]*.587+d[a+2]*.114, gb=d[b]*.299+d[b+1]*.587+d[b+2]*.114;
+    bits+= ga>gb?"1":"0";
+  }
+  let hex="";for(let i=0;i<64;i+=4)hex+=parseInt(bits.slice(i,i+4),2).toString(16);
+  return hex;
+}
+function hamming(a,b){
+  if(!a||!b||a.length!==b.length)return 99; let d=0;
+  for(let i=0;i<a.length;i++){let x=parseInt(a[i],16)^parseInt(b[i],16);while(x){d+=x&1;x>>=1;}}
+  return d;
+}
+async function shrink(img,max,q){
+  const s=Math.min(1,max/Math.max(img.width,img.height));
+  const c=document.createElement("canvas");c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);
+  c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+  return c.toDataURL("image/jpeg",q);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Claude vision → structured invoice JSON
+   ══════════════════════════════════════════════════════════════ */
+function prompt(){
+  const list=CFG.models.map(m=>`${m[0]} = ${m[1]}${m[2]?" (RRP "+m[2]+" SAR)":""}`).join("; ");
+  return `You are auditing a Jarir Bookstore retail invoice photo from Saudi Arabia for a mobile-phone promoter incentive programme. The text may be Arabic, English or both.
+Eligible models: ${list}.
+Return ONLY a JSON object, no markdown, no commentary:
+{"is_invoice":true|false,"doc_type":"invoice|receipt|quotation|screenshot|screen_photo|other","is_jarir":true|false,
+"invoice_no":"","invoice_date":"YYYY-MM-DD","seller":"","branch":"","currency":"SAR","total":0,"vat":0,
+"items":[{"raw":"","model_code":"","model_name":"","qty":1,"unit_price":0,"imei":""}],
+"imeis":[],
+"authenticity":{"screen_recapture":false,"screenshot":false,"edit_traces":false,"handwritten":false,"blurry":false,"key_fields_cropped":false,"notes":""},
+"confidence":0.0}
+Rules: only list phone items (ignore accessories, warranty, delivery). model_code must be one of the eligible codes, or "" if it does not match any. invoice_date must be ISO; use "" if unreadable. is_jarir = the seller is Jarir Bookstore / مكتبة جرير. screen_recapture = photographed from a screen (moire, glare, screen bezel, pixel grid). edit_traces = inconsistent fonts/alignment, totals that do not add up, pasted regions. Be strict and factual.`;
+}
+async function readInvoice(b64){
+  if(API.on()&&!CFG.apiKey){ const j=await API.call("ocr",{image:b64}); return j.ocr; }
+  const headers={"Content-Type":"application/json"};
+  if(CFG.apiKey){ headers["x-api-key"]=CFG.apiKey; headers["anthropic-version"]="2023-06-01"; headers["anthropic-dangerous-direct-browser-access"]="true"; }
+  const r=await fetch(CFG.endpoint,{method:"POST",headers,body:JSON.stringify({
+    model:"claude-sonnet-4-6",max_tokens:1000,
+    messages:[{role:"user",content:[
+      {type:"image",source:{type:"base64",media_type:"image/jpeg",data:b64}},
+      {type:"text",text:prompt()}]}]
+  })});
+  if(!r.ok) throw new Error("HTTP "+r.status+" — "+(await r.text()).slice(0,160));
+  const data=await r.json();
+  const txt=(data.content||[]).filter(c=>c.type==="text").map(c=>c.text).join("\n").replace(/```json|```/g,"").trim();
+  return JSON.parse(txt.slice(txt.indexOf("{"),txt.lastIndexOf("}")+1));
+}
+
+/* ══════════════════════════════════════════════════════════════
+   rule engine — the backend re-runs the duplicate half on the
+   full ledger, so this pass is a fast local pre-verdict only
+   ══════════════════════════════════════════════════════════════ */
+const norm=s=>(s||"").toString().toUpperCase().replace(/[^A-Z0-9]/g,"");
+function findModel(it){
+  const code=norm(it.model_code), name=norm(it.model_name)+norm(it.raw);
+  let m=CFG.models.find(x=>norm(x[0])===code&&code);
+  if(!m) m=CFG.models.find(x=>name.includes(norm(x[1])));
+  return m||null;
+}
+function evaluate(ocr,ctx){
+  const add=[], hit=c=>add.push(c);
+  const a=ocr.authenticity||{};
+  if(ocr.is_invoice===false||["screenshot","other","quotation"].includes(ocr.doc_type)&&ocr.is_invoice!==true) hit("not_invoice");
+  if(ocr.is_jarir===false) hit("not_jarir");
+  if(a.edit_traces) hit("edit_traces");
+  if(a.screen_recapture) hit("screen_recapture");
+  if(a.screenshot&&ocr.doc_type!=="invoice") hit("screenshot");
+  if(a.handwritten) hit("handwritten");
+  if(a.blurry||a.key_fields_cropped) hit("blurry");
+  if((ocr.confidence??1)<0.6) hit("low_conf");
+
+  /* date */
+  const d=ocr.invoice_date;
+  if(!d) hit("date_missing");
+  else{
+    const today=new Date().toISOString().slice(0,10);
+    if(d>today) hit("date_future");
+    else if(d<CFG.start||d>CFG.end) hit("date_out");
+    else if((Date.parse(today)-Date.parse(d))/864e5>7) hit("date_old");
+  }
+  if(!ocr.invoice_no) hit("invno_missing");
+
+  /* models + qty + price */
+  const items=(ocr.items||[]).filter(i=>i&&(i.model_code||i.model_name||i.raw));
+  let qty=0, models=[], unknown=false, low=false;
+  items.forEach(i=>{
+    const m=findModel(i), q=Math.max(1,parseInt(i.qty)||1);
+    if(m){ qty+=q; models.push({code:m[0],name:m[1],qty:q,price:+i.unit_price||0,imei:i.imei||""});
+      if(i.unit_price && +i.unit_price < m[2]*CFG.priceFloor/100) low=true;
+    } else unknown=true;
+  });
+  if(!models.length) hit("no_model"); else if(unknown) hit("model_unknown");
+  if(low) hit("price_low");
+  if(qty>3) hit("qty_high");
+
+  const imeis=[...new Set([...(ocr.imeis||[]),...items.map(i=>i.imei)].filter(x=>x&&(""+x).replace(/\D/g,"").length>=14).map(x=>(""+x).replace(/\D/g,"")))];
+  if(CFG.imeiRequired&&!imeis.length) hit("no_imei");
+
+  /* store */
+  const st=norm(ocr.seller)+norm(ocr.branch);
+  const mine=norm(ctx.store);
+  if(st&&mine&&!st.includes(mine.slice(0,5))&&!mine.includes(st.slice(0,5))) hit("store_mismatch");
+
+  /* duplicates */
+  if(RECS.some(r=>r.sha===ctx.sha)) hit("dup_file");
+  else if(RECS.some(r=>hamming(r.dh,ctx.dh)<=6)) hit("dup_image");
+  if(ocr.invoice_no&&RECS.some(r=>norm(r.invNo)===norm(ocr.invoice_no)&&norm(r.seller)===norm(ocr.seller))) hit("dup_invoice");
+  if(imeis.length&&RECS.some(r=>(r.imeis||[]).some(x=>imeis.includes(x)))) hit("dup_imei");
+  if(!add.includes("dup_invoice")&&RECS.some(r=>r.date===d&&norm(r.seller)===norm(ocr.seller)&&r.total===(+ocr.total||0)&&r.qty===qty&&qty>0)) hit("dup_fuzzy");
+
+  const risk=Math.min(100,add.reduce((s,c)=>s+(RULES[c]?.w||0),0));
+  const status = risk>=CFG.rej?"rejected" : risk<CFG.auto?"approved" : "review";
+  return {codes:add,risk,status,qty,models,imeis};
+}
+
+/* ══════════════════════════════════════════════════════════════
+   flow
+   ══════════════════════════════════════════════════════════════ */
+const PLACEHOLDER="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='110' height='150'%3E%3Crect width='110' height='150' fill='%231E2831'/%3E%3C/svg%3E";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+function toast(m){const el=$("#toast");el.textContent=m;el.classList.add("on");clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove("on"),2800);}
+function step(n,state){const el=$(`#tape div[data-s="${n}"]`);if(!el)return;el.className=state;el.querySelector("b").textContent=state==="done"?"✓":state==="on"?"›":"·";}
+
+$("#drop").onclick=()=>$("#file").click();
+$("#drop").ondragover=e=>{e.preventDefault();$("#drop").classList.add("over")};
+$("#drop").ondragleave=()=>$("#drop").classList.remove("over");
+$("#drop").ondrop=e=>{e.preventDefault();$("#drop").classList.remove("over");addFiles(e.dataTransfer.files)};
+$("#file").onchange=e=>addFiles(e.target.files);
+
+async function addFiles(list){
+  for(const f of list){ if(!f.type.startsWith("image/"))continue;
+    const buf=await f.arrayBuffer();
+    const url=URL.createObjectURL(f);
+    FILES.push({file:f,buf,url});
+  }
+  renderThumbs();
+}
+function renderThumbs(){
+  $("#thumbs").innerHTML=FILES.map((f,i)=>`<div class="thumb"><img src="${f.url}"><button data-rm="${i}">×</button></div>`).join("");
+  $$("#thumbs button").forEach(b=>b.onclick=()=>{FILES.splice(+b.dataset.rm,1);renderThumbs()});
+  $("#go").disabled=!FILES.length;
+}
+
+$("#go").onclick=async()=>{
+  const p=CFG.promoters.find(x=>x[0]===$("#pSel").value);
+  if(!p||!FILES.length){toast(t("need"));return;}
+  $("#go").disabled=true; $("#tape").hidden=false; $("#resultWrap").hidden=true;
+  [1,2,3,4].forEach(n=>step(n,""));
+  try{
+    step(1,"on");
+    const main=FILES[0];
+    const sha=await sha256(main.buf);
+    const img=await loadImg(main.url);
+    const dh=await dHash(img);
+    const b64=(await shrink(img,1500,.82)).split(",")[1];
+    const thumb=await shrink(img,320,.5);
+    step(1,"done"); step(2,"on");
+
+    /* cheap server-side hash check first — a re-upload never reaches the reader */
+    if(API.on()){
+      const pre=await API.call("precheck",{sha,dh});
+      if(pre.dup){
+        step(2,"done");
+        showReceipt({id:pre.hit||"—",status:"rejected",risk:100,codes:pre.codes||["dup_file"],
+          invNo:pre.invoice_no||"",date:pre.invoice_date||"",seller:pre.seller||"",
+          total:0,qty:0,models:[],imeis:[],pstore:p[3]});
+        FILES=[];renderThumbs();
+        return;
+      }
+    }
+    step(2,"done"); step(3,"on");
+
+    const ocr=await readInvoice(b64);
+    step(3,"done"); step(4,"on");
+    await DB.load();                                  // fresh ledger before judging
+
+    const ev=evaluate(ocr,{store:p[3],sha,dh});
+    let rec={
+      id:"INV"+Date.now().toString(36).toUpperCase(),
+      ts:new Date().toISOString(),
+      pid:p[0],pname:p[1],storeCode:p[2],pstore:p[3],channel:p[4]||"Jarir",
+      sha,dh,thumb,
+      invNo:ocr.invoice_no||"",date:ocr.invoice_date||"",
+      seller:(ocr.seller||"")+(ocr.branch?" · "+ocr.branch:""),
+      total:+ocr.total||0,vat:+ocr.vat||0,conf:ocr.confidence??null,docType:ocr.doc_type||"",
+      qty:ev.qty,models:ev.models,imeis:ev.imeis,codes:ev.codes,risk:ev.risk,status:ev.status,
+      notes:(ocr.authenticity||{}).notes||""
+    };
+    rec=await DB.add(rec,b64)||rec;
+    step(4,"done");
+    showReceipt(rec);
+    FILES=[];renderThumbs();
+    await DB.load(); refresh();
+  }catch(e){
+    [2,3,4].forEach(n=>step(n,""));
+    toast("Failed — "+e.message);
+    console.error(e);
+  }
+  $("#go").disabled=!FILES.length;
+};
+
+function showReceipt(r){
+  const line=(k,v)=>`<div class="kv"><b>${k}</b><span>${v||"—"}</span></div>`;
+  const chks=r.codes.length? r.codes.map(c=>{
+      const R=RULES[c]||{}; const sev=(R.w||0)>=30?"fail":"warn";
+      return `<div class="chk ${sev}"><span class="i">${sev==="fail"?"✕":"!"}</span><span>${R[LANG]||R.en||c}<span class="d"> · ${R.w}</span></span></div>`;
+    }).join("")
+    : `<div class="chk pass"><span class="i">✓</span><span>${LANG==="zh"?"全部校验通过":LANG==="ar"?"اجتاز جميع الفحوصات":"All checks passed"}</span></div>`;
+  $("#receipt").innerHTML=`
+    <div class="stamp ${r.status}">${t(r.status)}<small>RISK ${r.risk}</small></div>
+    <h3>${r.id}</h3>
+    ${line(t("store"),r.seller||r.pstore)}
+    ${line(t("invno"),r.invNo)}
+    ${line(t("date"),r.date)}
+    ${line(t("model"),r.models.map(m=>m.name+" ×"+m.qty).join(", "))}
+    ${line(t("qty"),r.qty)}
+    ${line(t("total"),r.total?r.total+" SAR":"")}
+    ${line(t("imei"),(r.imeis||[]).join(", "))}
+    <div class="chks">${chks}</div>`;
+  $("#resultWrap").hidden=false;
+  $("#resultWrap").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+/* ══ review queue ══ */
+function renderQueue(){
+  const f=$("#qFilter").value;
+  const list=RECS.filter(r=>f==="all"||r.status===f).sort((a,b)=>b.ts.localeCompare(a.ts));
+  $("#queue").innerHTML = list.length? list.map(r=>`
+    <div class="qitem">
+      <img src="${r.thumb||PLACEHOLDER}" data-big="${r.id}" alt="">
+      <div>
+        <div class="row" style="margin-bottom:6px">
+          <span class="pill ${r.status}">${t(r.status)}</span>
+          <span class="mono small muted">${r.id} · ${t("risk")} ${r.risk}</span>
+          <div class="spacer"></div>
+          <span class="mono small muted">${r.pname} · ${r.pstore}</span>
+        </div>
+        <div class="mono small">${r.date||"—"} · ${r.invNo||"—"} · ${r.seller||"—"} · ${r.total||0} SAR</div>
+        <div class="small" style="margin:4px 0">${r.models.map(m=>m.name+" ×"+m.qty).join(", ")||"—"} ${r.imeis.length?"· IMEI "+r.imeis.join(" / "):""}</div>
+        <div class="small" style="color:#f0b54e">${r.codes.map(c=>(RULES[c]||{})[LANG]||c).join(" · ")||"—"}</div>
+        ${r.notes?`<div class="small muted">${r.notes}</div>`:""}
+        ${r.imageUrl?`<a class="small" href="${r.imageUrl}" target="_blank" rel="noopener">Drive ↗</a>`:""}
+        <div class="row" style="margin-top:8px">
+          <button class="btn ok sm" data-set="approved" data-id="${r.id}">${t("btnOk")}</button>
+          <button class="btn no sm" data-set="rejected" data-id="${r.id}">${t("btnNo")}</button>
+        </div>
+      </div>
+    </div>`).join("") : `<div class="card muted">${t("empty")}</div>`;
+  $$("#queue [data-set]").forEach(b=>b.onclick=async()=>{
+    try{ await DB.decide(b.dataset.id,b.dataset.set); await DB.load(); refresh(); toast(t(b.dataset.set)); }
+    catch(e){ toast(e.message); }
+  });
+  $$("#queue img").forEach(im=>im.onclick=()=>{$("#modalImg").src=im.src;$("#modal").classList.add("on")});
+}
+$("#modal").onclick=()=>$("#modal").classList.remove("on");
+$("#qFilter").onchange=renderQueue;
+
+/* ══ data ══ */
+function agg(){
+  const ok=RECS.filter(r=>r.status==="approved");
+  const byP={},byM={},byD={};
+  ok.forEach(r=>{
+    byP[r.pname]=byP[r.pname]||{store:r.pstore,ch:r.channel,inv:0,q:0};
+    byP[r.pname].inv++; byP[r.pname].q+=r.qty;
+    byD[r.date||"—"]=(byD[r.date||"—"]||0)+r.qty;
+    r.models.forEach(m=>{byM[m.name]=(byM[m.name]||0)+m.qty});
+  });
+  return {ok,byP,byM,byD};
+}
+function renderData(){
+  const {ok,byP,byM,byD}=agg();
+  const units=ok.reduce((s,r)=>s+r.qty,0);
+  const rev=RECS.filter(r=>r.status==="review").length, rej=RECS.filter(r=>r.status==="rejected").length;
+  const dup=RECS.filter(r=>r.codes.some(c=>c.startsWith("dup_"))).length;
+  $("#kpis").innerHTML=[
+    ["pass",units,t("kUnits")],["",ok.length,t("kInv")],["review",rev,t("kRev")],
+    ["fail",rej,t("kRej")],["fail",dup,t("kDup")]
+  ].map(k=>`<div class="kpi ${k[0]}"><div class="v">${k[1]}</div><div class="l">${k[2]}</div></div>`).join("");
+
+  $("#tblP").innerHTML=`<thead><tr><th>${t("pName")}</th><th>${t("pStore")}</th><th>Channel</th><th class="num">${t("kInv")}</th><th class="num">${t("qty")}</th></tr></thead><tbody>`+
+    (Object.entries(byP).sort((a,b)=>b[1].q-a[1].q).map(([n,v])=>
+      `<tr><td>${n}</td><td>${v.store}</td><td>${v.ch}</td><td class="num">${v.inv}</td><td class="num">${v.q}</td></tr>`).join("")
+     || `<tr><td colspan="5" class="muted">${t("empty")}</td></tr>`)+`</tbody>`;
+  $("#tblM").innerHTML=`<thead><tr><th>${t("model")}</th><th class="num">${t("qty")}</th></tr></thead><tbody>`+
+    (Object.entries(byM).sort((a,b)=>b[1]-a[1]).map(([n,q])=>`<tr><td>${n}</td><td class="num">${q}</td></tr>`).join("")
+     || `<tr><td colspan="2" class="muted">${t("empty")}</td></tr>`)+`</tbody>`;
+  $("#tblD").innerHTML=`<thead><tr><th>${t("date")}</th><th class="num">${t("qty")}</th></tr></thead><tbody>`+
+    (Object.entries(byD).sort().map(([n,q])=>`<tr><td class="mono">${n}</td><td class="num">${q}</td></tr>`).join("")
+     || `<tr><td colspan="2" class="muted">${t("empty")}</td></tr>`)+`</tbody>`;
+}
+/* ══ Excel export — SheetJS pulled on demand ══ */
+function loadXLSX(){
+  if(window.XLSX) return Promise.resolve();
+  return new Promise((res,rej)=>{
+    const s=document.createElement("script");
+    s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    s.onload=res; s.onerror=()=>rej(new Error("SheetJS could not load — check the connection"));
+    document.head.appendChild(s);
+  });
+}
+$("#expx").onclick=async()=>{
+  try{ await loadXLSX(); }catch(e){ toast(e.message); return; }
+  const ok=RECS.filter(r=>r.status==="approved");
+
+  /* 1 · 台账 — one row per invoice */
+  const ledger=[["单号 ID","提交时间 Submitted","工号 ID","促销员 Promoter","门店代码 Store code","门店 Store",
+    "状态 Status","风险分 Risk","命中规则 Flags","发票号 Invoice no.","发票日期 Invoice date","开票方 Seller",
+    "金额 Total","数量 Qty","机型 Models","IMEI","图片哈希 SHA-256","感知哈希 dHash","图片 Image"]]
+    .concat(RECS.map(r=>[r.id,r.ts,r.pid,r.pname,r.storeCode||"",r.pstore,r.status,r.risk,
+      (r.codes||[]).map(c=>(RULES[c]||{}).zh||c).join(" / "),r.invNo,r.date,r.seller,r.total,r.qty,
+      (r.models||[]).map(m=>m.name+"×"+m.qty).join(" / "),(r.imeis||[]).join(" / "),r.sha,r.dh,r.imageUrl||""]));
+
+  /* 2 · 明细 — one row per model, this is the sell-out source of truth */
+  const items=[["单号 ID","发票日期 Date","工号 ID","促销员 Promoter","门店 Store","机型代码 Code",
+    "机型 Model","数量 Qty","单价 Price","IMEI","状态 Status"]];
+  RECS.forEach(r=>(r.models||[]).forEach(m=>items.push(
+    [r.id,r.date,r.pid,r.pname,r.pstore,m.code,m.name,m.qty,m.price||"",m.imei||"",r.status])));
+
+  /* 3-5 · rollups, approved only */
+  const byP={},byM={},byD={};
+  ok.forEach(r=>{
+    byP[r.pname]=byP[r.pname]||{store:r.pstore,pid:r.pid,inv:0,q:0};
+    byP[r.pname].inv++; byP[r.pname].q+=r.qty;
+    byD[r.date||"—"]=(byD[r.date||"—"]||0)+r.qty;
+    (r.models||[]).forEach(m=>{ byM[m.name]=byM[m.name]||{code:m.code,q:0}; byM[m.name].q+=m.qty; });
+  });
+  const sP=[["工号 ID","促销员 Promoter","门店 Store","通过发票数 Invoices","核销销量 Units"]]
+    .concat(Object.entries(byP).sort((a,b)=>b[1].q-a[1].q).map(([n,v])=>[v.pid,n,v.store,v.inv,v.q]));
+  const sM=[["机型代码 Code","机型 Model","核销销量 Units"]]
+    .concat(Object.entries(byM).sort((a,b)=>b[1].q-a[1].q).map(([n,v])=>[v.code,n,v.q]));
+  const sD=[["发票日期 Date","核销销量 Units"]]
+    .concat(Object.entries(byD).sort().map(([d,q])=>[d,q]));
+
+  const wb=XLSX.utils.book_new();
+  const add=(rows,name,widths)=>{
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    ws["!cols"]=widths.map(w=>({wch:w}));
+    ws["!freeze"]={xSplit:0,ySplit:1};
+    XLSX.utils.book_append_sheet(wb,ws,name);
+  };
+  add(sP,"促销员汇总",[12,26,18,14,14]);
+  add(sM,"机型汇总",[16,30,12]);
+  add(sD,"日期汇总",[14,12]);
+  add(items,"核销明细",[14,12,12,26,18,14,26,8,10,20,12]);
+  add(ledger,"发票台账",[14,20,12,26,18,18,10,8,34,16,12,26,10,8,28,22,20,18,30]);
+  XLSX.writeFile(wb,"Jarir_invoice_sellout_"+new Date().toISOString().slice(0,10)+".xlsx");
+  toast("Excel ✓");
+};
+
+$("#exp").onclick=()=>{
+  const head=["id","submitted","promoter_id","promoter","store","channel","status","risk","flags","invoice_no","invoice_date","seller","total","qty","models","imei","sha256","dhash"];
+  const rows=RECS.map(r=>[r.id,r.ts,r.pid,r.pname,r.pstore,r.channel,r.status,r.risk,r.codes.join(";"),r.invNo,r.date,r.seller,r.total,r.qty,r.models.map(m=>m.name+"x"+m.qty).join(";"),(r.imeis||[]).join(";"),r.sha,r.dh]);
+  const csv="\uFEFF"+[head,...rows].map(r=>r.map(v=>`"${(v??"").toString().replace(/"/g,'""')}"`).join(",")).join("\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download="invoice_sellout_"+new Date().toISOString().slice(0,10)+".csv";a.click();
+};
+
+function renderMine(){
+  const pid=$("#pSel").value;
+  const mine=RECS.filter(r=>r.pid===pid).sort((a,b)=>b.ts.localeCompare(a.ts)).slice(0,20);
+  $("#myTbl").innerHTML=`<thead><tr><th>${t("date")}</th><th>${t("invno")}</th><th>${t("model")}</th><th class="num">${t("qty")}</th><th>Status</th></tr></thead><tbody>`+
+   (mine.map(r=>`<tr><td class="mono">${r.date||"—"}</td><td class="mono">${r.invNo||"—"}</td><td>${r.models.map(m=>m.name).join(", ")||"—"}</td><td class="num">${r.qty}</td><td><span class="pill ${r.status}">${t(r.status)}</span></td></tr>`).join("")
+    || `<tr><td colspan="5" class="muted">${t("empty")}</td></tr>`)+`</tbody>`;
+}
+
+/* ══ settings — reached only after the 5-tap unlock ══ */
+function fillSettings(){
+  $("#apiUrl").value=CFG.api; $("#apiTok").value=CFG.token; $("#apiPin").value=CFG.pin;
+  $("#cStart").value=CFG.start;$("#cEnd").value=CFG.end;$("#cAuto").value=CFG.auto;$("#cRej").value=CFG.rej;
+  $("#cPrice").value=CFG.priceFloor;$("#cImei").value=CFG.imeiRequired?"1":"0";
+  $("#engEnd").value=CFG.endpoint;$("#engKey").value=CFG.apiKey;
+}
+$("#save").onclick=async()=>{
+  CFG.api=$("#apiUrl").value.trim(); CFG.token=$("#apiTok").value.trim(); CFG.pin=$("#apiPin").value.trim();
+  CFG.start=$("#cStart").value;CFG.end=$("#cEnd").value;
+  CFG.auto=+$("#cAuto").value;CFG.rej=+$("#cRej").value;CFG.priceFloor=+$("#cPrice").value;
+  CFG.imeiRequired=+$("#cImei").value;CFG.endpoint=$("#engEnd").value.trim();CFG.apiKey=$("#engKey").value.trim();
+  await Store.set(KEY_CFG,CFG);
+  try{ await bootstrap(); }catch(e){ toast("Backend: "+e.message); }
+  fillPromoters(); await DB.load(); refresh(); netBadge(); toast(t("ok"));
+};
+$("#test").onclick=async()=>{
+  CFG.api=$("#apiUrl").value.trim(); CFG.token=$("#apiTok").value.trim();
+  try{
+    const j=await API.call("bootstrap",{});
+    $("#testOut").textContent=`✓ ${(j.promoters||[]).length} promoters · ${(j.models||[]).length} models`;
+  }catch(e){ $("#testOut").textContent="✕ "+e.message; }
+};
+$("#wipe").onclick=async()=>{ if(!confirm("Clear local records on this device?"))return; RECS=[]; await Store.set(KEY_REC,[]); refresh(); };
+$("#lock").onclick=()=>lockAdmin();
+$("#reload").onclick=async()=>{ await DB.load(); refresh(); toast("↻"); };
+
+/* ══ shell ══ */
+function fillPromoters(){
+  $("#pSel").innerHTML=CFG.promoters.map(p=>`<option value="${p[0]}">${p[1]} — ${p[0]}</option>`).join("");
+  syncStore();
+}
+function syncStore(){
+  const p=CFG.promoters.find(x=>x[0]===$("#pSel").value);
+  $("#pStore").value=p?`${p[3]} (${p[2]})`:"";
+  renderMine();
+}
+$("#pSel").onchange=syncStore;
+
+/* Review, Sell-out and Settings are manager surfaces: the Settings tab
+   opens only after 5 taps within 4 seconds, then an optional PIN.      */
+let taps=0,tapT=null;
+function lockAdmin(){
+  UNLOCKED=false; taps=0;
+  $("#bRev").hidden=true; $("#bDat").hidden=true;
+  showView("up"); toast(t("locked"));
+}
+function unlockAdmin(){
+  if(CFG.pin){ const v=window.prompt(t("pin")); if(v!==CFG.pin){ toast("✕"); return; } }
+  UNLOCKED=true; $("#bRev").hidden=false; $("#bDat").hidden=false; showView("set");
+}
+function showView(v){
+  $$("nav button").forEach(x=>x.classList.toggle("on",x.dataset.v===v));
+  $$(".view").forEach(s=>s.classList.toggle("on",s.id==="v-"+v));
+  refresh();
+}
+$$("nav button").forEach(b=>b.onclick=()=>{
+  if(b.dataset.v==="set"&&!UNLOCKED){
+    taps++; clearTimeout(tapT); tapT=setTimeout(()=>taps=0,4000);
+    if(taps>=5) unlockAdmin();
+    return;
+  }
+  showView(b.dataset.v);
+});
+
+$$(".langs button").forEach(b=>b.onclick=()=>setLang(b.dataset.lang));
+function setLang(l){
+  LANG=l;
+  $$(".langs button").forEach(x=>x.classList.toggle("on",x.dataset.lang===l));
+  document.documentElement.lang=l; document.body.dir = l==="ar"?"rtl":"ltr";
+  $$("[data-i]").forEach(el=>{const v=I18N[l][el.dataset.i]||I18N.en[el.dataset.i]; if(v)el.textContent=v;});
+  netBadge(); refresh();
+}
+function netBadge(){
+  $("#netDot").classList.toggle("on",API.on());
+  $("#netTxt").textContent=API.on()?t("netOn"):t("netOff");
+}
+function refresh(){
+  $("#qn").textContent=RECS.filter(r=>r.status==="review").length;
+  renderQueue();renderData();renderMine();
+}
+(async function init(){
+  CFG={...DEFAULT_CFG,...(await Store.get(KEY_CFG,{}))};
+  try{ await bootstrap(); }catch(e){ console.warn("bootstrap",e); }
+  await DB.load();
+  fillPromoters(); fillSettings(); setLang("zh"); netBadge();
+})();
+</script>
+</body>
+</html>
