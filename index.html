@@ -187,7 +187,7 @@ nav button[hidden]{display:none}
   </div>
   <nav>
     <button data-v="up" class="on" data-i="navUp">Upload</button>
-    <button data-v="rev" id="bRev" hidden data-i="navRev">Review<span class="n" id="qn">0</span></button>
+    <button data-v="rev" id="bRev" hidden><span data-i="navRev">Review</span><span class="n" id="qn">0</span></button>
     <button data-v="dat" id="bDat" hidden data-i="navDat">Sell-out</button>
     <button data-v="set" data-i="navSet">Settings</button>
   </nav>
@@ -1073,12 +1073,15 @@ function setLang(l){
   netBadge(); refresh();
 }
 function netBadge(){
-  $("#netDot").classList.toggle("on",API.on());
-  $("#netTxt").textContent=API.on()?t("netOn"):t("netOff");
+  const d=$("#netDot"), x=$("#netTxt");
+  if(d) d.classList.toggle("on",API.on());
+  if(x) x.textContent=API.on()?t("netOn"):t("netOff");
 }
 function refresh(){
-  $("#qn").textContent=RECS.filter(r=>r.status==="review").length;
-  renderQueue();renderData();renderMine();
+  const q=$("#qn"); if(q) q.textContent=RECS.filter(r=>r.status==="review").length;
+  try{ renderQueue(); }catch(e){ console.warn("queue",e); }
+  try{ renderData(); }catch(e){ console.warn("data",e); }
+  try{ renderMine(); }catch(e){ console.warn("mine",e); }
 }
 function strip(c){ const o={...c}; delete o.pin; return o; }
 (async function init(){
@@ -1086,7 +1089,8 @@ function strip(c){ const o={...c}; delete o.pin; return o; }
   if(BUILD.api){ CFG.api=BUILD.api; CFG.token=BUILD.token; CFG.pin=BUILD.pin||""; }  /* shipped config always wins */
 
   /* paint first — the store must be usable before the network answers */
-  fillPromoters(); fillModels(); fillSettings(); setLang("zh"); netBadge();
+  try{ fillPromoters(); fillModels(); fillSettings(); setLang("zh"); netBadge(); }
+  catch(e){ console.error("paint failed:",e); }
 
   try{ await bootstrap(); fillPromoters(); fillModels(); }
   catch(e){ console.warn("bootstrap failed, using built-in lists:",e); toast("后端未响应，暂用内置名单"); }
