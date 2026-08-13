@@ -233,6 +233,7 @@ nav button[hidden]{display:none}
       <button class="btn" id="go" disabled data-i="btnGo">Verify & submit</button>
       <span class="muted small" id="engineHint"></span>
     </div>
+    <div class="note" id="errBox" hidden style="border-inline-start-color:var(--fail);background:rgba(175,33,24,.07);margin-top:12px;word-break:break-word"></div>
     <div class="tape" id="tape" hidden>
       <div data-s="1"><b>·</b><span data-i="s1">Reading image / hashing</span></div>
       <div data-s="2"><b>·</b><span data-i="s2">Reading invoice fields</span></div>
@@ -741,6 +742,10 @@ function evaluate(man,ocr,ctx){
    ══════════════════════════════════════════════════════════════ */
 const PLACEHOLDER="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='110' height='150'%3E%3Crect width='110' height='150' fill='%23EFE0CA'/%3E%3C/svg%3E";
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+function showErr(m){
+  const b=$("#errBox"); if(!b) return;
+  b.textContent=m||""; b.hidden=!m;
+}
 function toast(m){const el=$("#toast");el.textContent=m;el.classList.add("on");clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove("on"),2800);}
 function step(n,state){const el=$(`#tape div[data-s="${n}"]`);if(!el)return;el.className=state;el.querySelector("b").textContent=state==="done"?"✓":state==="on"?"›":"·";}
 
@@ -786,7 +791,7 @@ $("#go").onclick=async()=>{
     const sha=await sha256(main.buf);
     const img=await loadImg(main.url);
     const dh=await dHash(img);
-    const b64=(await shrink(img,1500,.82)).split(",")[1];
+    const b64=(await shrink(img,1280,.72)).split(",")[1];   /* readable by eye, ~1/3 the bytes */
     const thumb=await shrink(img,320,.5);
     step(1,"done"); step(2,"on");
 
@@ -843,8 +848,9 @@ $("#go").onclick=async()=>{
       codes:ev.codes,risk:ev.risk,status:ev.status,
       notes:ocr?((ocr.authenticity||{}).notes||""):""
     };
-    try{ rec=await DB.add(rec,b64)||rec; }
+    try{ rec=await DB.add(rec,b64)||rec; showErr(""); }
     catch(err){
+      showErr("上传失败 / Upload failed\n"+err.message+"\n图片 "+Math.round(b64.length*0.75/1024)+" KB · "+new Date().toLocaleTimeString());
       rec.status="review"; rec.pending=true;
       rec.notes=(rec.notes?rec.notes+" · ":"")+"后端写入失败，暂存本机："+err.message;
       const local=await Store.get(KEY_REC,[]); local.push(rec); await Store.set(KEY_REC,local);
