@@ -567,10 +567,32 @@ async function bootstrap(){
 const DB={
   async load(){
     if(API.on()){
-      try{ const j=await API.call("list",{limit:300}); RECS=j.records||[]; return; }
-      catch(e){ toast("Backend: "+e.message); }
+      try{
+        const j=await API.call("list",{limit:300});
+        RECS=j.records||[];
+        const pend=(await Store.get(KEY_REC,[])).filter(r=>r.pending);
+        if(pend.length) RECS=RECS.concat(pend);        /* still visible while unsynced */
+        return;
+      }catch(e){ toast("Backend: "+e.message); }
     }
     RECS=await Store.get(KEY_REC,[]);
+  },
+  /* anything that failed to reach the ledger is pushed on the next good connection */
+  async syncPending(){
+    if(!API.on()) return 0;
+    const local=await Store.get(KEY_REC,[]);
+    const pend=local.filter(r=>r.pending);
+    if(!pend.length) return 0;
+    let done=0;
+    for(const r of pend){
+      try{ const c={...r}; delete c.pending; await API.call("submit",{record:c,image:""}); done++; }
+      catch(e){ console.warn("resync failed",r.id,e.message); }
+    }
+    if(done){
+      await Store.set(KEY_REC, local.filter(r=>!r.pending).concat(pend.slice(done)));
+      toast("已补传 "+done+" 条本机暂存记录");
+    }
+    return done;
   },
   async add(rec,imageB64){
     if(API.on()){ const j=await API.call("submit",{record:rec,image:imageB64}); return j.record||rec; }
@@ -823,9 +845,10 @@ $("#go").onclick=async()=>{
     };
     try{ rec=await DB.add(rec,b64)||rec; }
     catch(err){
-      rec.status="review"; rec.notes=(rec.notes?rec.notes+" · ":"")+"后端写入失败，暂存本机："+err.message;
-      RECS.push(rec); await Store.set(KEY_REC,RECS);
-      toast("⚠ 后端未保存，已暂存本机，请截图告知管理员");
+      rec.status="review"; rec.pending=true;
+      rec.notes=(rec.notes?rec.notes+" · ":"")+"后端写入失败，暂存本机："+err.message;
+      const local=await Store.get(KEY_REC,[]); local.push(rec); await Store.set(KEY_REC,local);
+      toast("⚠ 未上传成功，已暂存本机，联网后会自动补传");
     }
     step(4,"done");
     if(AI_ENABLED&&!ocr) toast(t("aiFail"));
@@ -1011,7 +1034,7 @@ function renderMine(){
   const pid=$("#pSel").value;
   const mine=RECS.filter(r=>r.pid===pid).sort((a,b)=>b.ts.localeCompare(a.ts)).slice(0,20);
   $("#myTbl").innerHTML=`<thead><tr><th>${t("date")}</th><th>${t("invno")}</th><th>${t("model")}</th><th class="num">${t("qty")}</th><th>Status</th></tr></thead><tbody>`+
-   (mine.map(r=>`<tr><td class="mono">${r.date||"—"}</td><td class="mono">${r.invNo||"—"}</td><td>${r.models.map(m=>m.name).join(", ")||"—"}</td><td class="num">${r.qty}</td><td><span class="pill ${r.status}">${t(r.status)}</span>${(r.codes||[]).length?`<div class="small muted">${r.codes.map(c=>(RULES[c]||{})[LANG]||c).join(" · ")}</div>`:""}</td></tr>`).join("")
+   (mine.map(r=>`<tr><td class="mono">${r.date||"—"}</td><td class="mono">${r.invNo||"—"}</td><td>${r.models.map(m=>m.name).join(", ")||"—"}</td><td class="num">${r.qty}</td><td><span class="pill ${r.status}">${t(r.status)}</span>${r.pending?'<span class="pill rejected" style="margin-inline-start:4px">未上传</span>':""}${(r.codes||[]).length?`<div class="small muted">${r.codes.map(c=>(RULES[c]||{})[LANG]||c).join(" · ")}</div>`:""}</td></tr>`).join("")
     || `<tr><td colspan="5" class="muted">${t("empty")}</td></tr>`)+`</tbody>`;
 }
 
@@ -1040,7 +1063,7 @@ $("#test").onclick=async()=>{
 };
 $("#wipe").onclick=async()=>{ if(!confirm("Clear local records on this device?"))return; RECS=[]; await Store.set(KEY_REC,[]); refresh(); };
 $("#lock").onclick=()=>lockAdmin();
-$("#reload").onclick=async()=>{ await DB.load(); refresh(); toast("↻"); };
+$("#reload").onclick=async()=>{ await DB.syncPending(); await DB.load(); refresh(); toast("↻"); };
 
 /* ══ shell ══ */
 function fillModels(){
@@ -1119,6 +1142,7 @@ function strip(c){ const o={...c}; delete o.pin; return o; }
 
   try{ await bootstrap(); fillPromoters(); fillModels(); }
   catch(e){ console.warn("bootstrap failed, using built-in lists:",e); toast("后端未响应，暂用内置名单"); }
+  try{ await DB.syncPending(); }catch(e){ console.warn(e); }
   try{ await DB.load(); }catch(e){ console.warn(e); }
   refresh(); netBadge();
 })();
