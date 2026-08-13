@@ -340,6 +340,10 @@ nav button[hidden]{display:none}
    BUILD — 上线前只改这两行，然后把整个文件传上 GitHub。
    促销员打开链接即已连上后端，手机上不需要做任何设置。
    ═══════════════════════════════════════════════════════════════════ */
+/* AI 识别开关：false = 全部人工核对，不产生任何 API 费用。
+   以后有预算了，把它改回 true，并在 Apps Script 脚本属性里填好 ANTHROPIC_KEY 即可。 */
+const AI_ENABLED = false;
+
 const BUILD = {
   api:   "https://script.google.com/macros/s/AKfycbyri6JRvU-iTC8tmJp29jGbVVCIFPIfVpYMdVsUPoXG2hJU4xhcHHFIryq5dPt32mDw5w/exec",  
   token: "TECNO-JARIR-2026",
@@ -353,11 +357,11 @@ const I18N = {
  zh:{hsub:"Jarir 发票核销",navUp:"上传",navRev:"人工审核",navDat:"销量",navSet:"设置",
    who:"促销员",pName:"促销员",pStore:"门店",upTitle:"发票照片",
    mTitle:"发票信息（手工填写，以此为准）",mInv:"发票号 *",mDate:"销售日期 *",mModel:"机型 *",mQty:"数量",mImei:"IMEI",mPrice:"实付金额 SAR",
-   mNote:"以你填写的内容为准。照片是凭证，AI 识别只做交叉核对——识别不出来也照样能提交。",
+   mNote:"照片必须能看清发票号、日期、机型，管理员会逐张人工核对。填错或与照片不符会被拒绝并影响提成。",
    needFields:"发票号、销售日期、机型为必填",aiFail:"AI 未能识别，已按你填写的内容记录，转人工审核",
    aiTitle:"AI 识别结果（参考）",aiNone:"未识别",manualTitle:"你填写的内容",
    dropBig:"点击拍摄 / 选择发票照片",dropSub:"一张照片要能同时看清：门店名、发票号、日期、机型、IMEI。可加传一张 IMEI 串码贴纸。",
-   btnGo:"识别并提交",s1:"读取图片、计算指纹",s2:"快速查重",s3:"识别发票字段",s4:"风险判定并归档",
+   btnGo:"识别并提交",s1:"读取图片、计算指纹",s2:"快速查重",s3:"字段与重复校验",s4:"归档待审核",
    resTitle:"核销结果",myTitle:"我的提交记录",qTitle:"待人工审核",reload:"刷新",
    byP:"促销员销量",byM:"机型销量",byD:"按日期",exp:"导出 CSV",expx:"导出 Excel",
    setApi:"后端（Google Sheets）",apiUrl:"Apps Script 部署地址",apiTok:"应用令牌 Token",apiPin:"管理 PIN",test:"测试连接",
@@ -375,11 +379,11 @@ const I18N = {
  en:{hsub:"Jarir Invoice Verification",navUp:"Upload",navRev:"Review",navDat:"Sell-out",navSet:"Settings",
    who:"Promoter",pName:"Promoter",pStore:"Store",upTitle:"Invoice photo",
    mTitle:"Invoice details — you type these",mInv:"Invoice no. *",mDate:"Sale date *",mModel:"Model *",mQty:"Quantity",mImei:"IMEI",mPrice:"Price paid (SAR)",
-   mNote:"What you type is what counts. The photo is the evidence; the AI reading is only a cross-check — it can fail and your record still goes through.",
+   mNote:"The photo must clearly show the invoice number, date and model. Every upload is checked by hand against what you typed. Entries that do not match the photo are rejected.",
    needFields:"Invoice no., sale date and model are required",aiFail:"AI could not read the photo. Your entry was filed and sent to manual review.",
    aiTitle:"AI reading (reference)",aiNone:"not read",manualTitle:"What you entered",
    dropBig:"Tap to photograph the invoice",dropSub:"One clear shot showing store name, invoice number, date, model and IMEI. You may add a second photo of the IMEI label.",
-   btnGo:"Verify & submit",s1:"Reading image, building fingerprint",s2:"Fast duplicate check",s3:"Reading invoice fields",s4:"Risk rules & filing",
+   btnGo:"Verify & submit",s1:"Reading image, building fingerprint",s2:"Fast duplicate check",s3:"Field & duplicate checks",s4:"Filed for review",
    resTitle:"Result",myTitle:"My submissions",qTitle:"Manual review queue",reload:"Reload",
    byP:"Sell-out by promoter",byM:"Sell-out by model",byD:"Sell-out by date",exp:"Export CSV",expx:"Export Excel",
    setApi:"Backend (Google Sheets)",apiUrl:"Apps Script web app URL",apiTok:"App token",apiPin:"Admin PIN",test:"Test connection",
@@ -397,11 +401,11 @@ const I18N = {
  ar:{hsub:"التحقق من فواتير جرير",navUp:"رفع",navRev:"المراجعة",navDat:"المبيعات",navSet:"الإعدادات",
    who:"المروّج",pName:"المروّج",pStore:"المعرض",upTitle:"صورة الفاتورة",
    mTitle:"بيانات الفاتورة — تُدخلها بنفسك",mInv:"رقم الفاتورة *",mDate:"تاريخ البيع *",mModel:"الموديل *",mQty:"الكمية",mImei:"IMEI",mPrice:"المبلغ المدفوع (ريال)",
-   mNote:"ما تُدخله هو المعتمد. الصورة دليل، وقراءة الذكاء الاصطناعي للمطابقة فقط.",
+   mNote:"يجب أن تُظهر الصورة رقم الفاتورة والتاريخ والموديل بوضوح. تتم مراجعة كل عملية رفع يدوياً ومقارنتها بما أدخلته.",
    needFields:"رقم الفاتورة وتاريخ البيع والموديل حقول إلزامية",aiFail:"تعذّرت القراءة الآلية. تم حفظ إدخالك وإحالته للمراجعة.",
    aiTitle:"القراءة الآلية (مرجعية)",aiNone:"لم تُقرأ",manualTitle:"ما أدخلته",
    dropBig:"اضغط لتصوير الفاتورة",dropSub:"صورة واضحة تُظهر اسم المعرض ورقم الفاتورة والتاريخ والموديل ورقم IMEI. يمكن إضافة صورة ثانية لملصق IMEI.",
-   btnGo:"تحقق وأرسل",s1:"قراءة الصورة وإنشاء البصمة",s2:"فحص سريع للتكرار",s3:"قراءة بيانات الفاتورة",s4:"قواعد المخاطر والحفظ",
+   btnGo:"تحقق وأرسل",s1:"قراءة الصورة وإنشاء البصمة",s2:"فحص سريع للتكرار",s3:"فحص الحقول والتكرار",s4:"الحفظ للمراجعة",
    resTitle:"النتيجة",myTitle:"طلباتي",qTitle:"قائمة المراجعة",reload:"تحديث",
    byP:"المبيعات حسب المروّج",byM:"حسب الموديل",byD:"حسب التاريخ",exp:"تصدير CSV",expx:"تصدير Excel",
    setApi:"الخادم",apiUrl:"عنوان الخدمة",apiTok:"رمز التطبيق",apiPin:"رمز الإدارة",test:"اختبار الاتصال",
@@ -441,7 +445,7 @@ const RULES = {
  no_model:{w:35,zh:"未识别到机型",en:"No model found",ar:"لم يتم العثور على موديل"},
  price_low:{w:20,zh:"成交价低于价格下限",en:"Price below the floor",ar:"السعر أقل من الحد"},
  store_mismatch:{w:15,zh:"发票门店与促销员绑定门店不一致",en:"Invoice store differs from the promoter's store",ar:"المعرض لا يطابق"},
- ocr_failed:{w:0,zh:"AI 未能识别照片，转人工核对",en:"AI could not read the photo — manual check",ar:"تعذّرت القراءة الآلية"},
+ ocr_failed:{w:0,zh:"待人工核对照片与填写内容",en:"Awaiting manual check of photo vs entry",ar:"بانتظار المراجعة اليدوية"},
  mismatch_invno:{w:45,zh:"填写的发票号与照片上的不一致",en:"Typed invoice number differs from the photo",ar:"رقم الفاتورة لا يطابق الصورة"},
  mismatch_date:{w:35,zh:"填写的日期与照片上的不一致",en:"Typed date differs from the photo",ar:"التاريخ لا يطابق الصورة"},
  mismatch_model:{w:40,zh:"填写的机型与照片上的不一致",en:"Typed model differs from the photo",ar:"الموديل لا يطابق الصورة"},
@@ -517,8 +521,26 @@ const API={
   get url(){return (CFG.api||"").trim()},
   on(){return !!this.url},
   async call(action,payload,ms){
+    /* Apps Script answers through a 302 to googleusercontent, and that hop
+       intermittently returns an HTML interstitial or a 404. One quiet retry
+       turns almost all of those into a normal answer. */
+    const attempts = ["ocr","submit"].includes(action) ? 2 : 3;
+    let last;
+    for(let i=0;i<attempts;i++){
+      if(i) await new Promise(r=>setTimeout(r,600*i));
+      try{ return await this.once(action,payload,ms); }
+      catch(e){
+        last=e;
+        const retryable=/Bad response|timed out|Failed to fetch|NetworkError|404/i.test(e.message);
+        if(!retryable) throw e;
+        console.warn(`${action} attempt ${i+1}/${attempts}: ${e.message.slice(0,80)}`);
+      }
+    }
+    throw last;
+  },
+  async once(action,payload,ms){
     const ac=new AbortController();
-    const timer=setTimeout(()=>ac.abort(),ms||(["ocr","submit"].includes(action)?90000:20000));
+    const timer=setTimeout(()=>ac.abort(),ms||(["ocr","submit"].includes(action)?90000:25000));
     let r;
     try{
       r=await fetch(this.url,{method:"POST",signal:ac.signal,headers:{"Content-Type":"text/plain;charset=utf-8"},
@@ -526,6 +548,7 @@ const API={
     }catch(e){
       throw new Error(e.name==="AbortError"?"后端超时未响应 Backend timed out":e.message);
     }finally{ clearTimeout(timer); }
+    if(!r.ok) throw new Error("HTTP "+r.status);
     const txt=await r.text();
     let j; try{ j=JSON.parse(txt); }catch(e){ throw new Error("Bad response: "+txt.slice(0,120)); }
     if(!j.ok) throw new Error(j.error||"API error");
@@ -772,11 +795,13 @@ $("#go").onclick=async()=>{
     }
     step(2,"done"); step(3,"on");
 
-    /* the reader may fail or time out — the record is filed either way */
+    /* AI off: nothing is read, the photo is filed as evidence for a human */
     let ocr=null, aiError="";
-    try{ ocr=await readInvoice(b64); }
-    catch(e){ aiError=e.message; console.warn("OCR failed:",e.message); }
-    step(3,ocr?"done":""); step(4,"on");
+    if(AI_ENABLED){
+      try{ ocr=await readInvoice(b64); }
+      catch(e){ aiError=e.message; console.warn("OCR failed:",e.message); }
+    }
+    step(3,"done"); step(4,"on");
 
     try{ await DB.load(); }catch(e){}
     const ev=evaluate(man,ocr,{store:p[3],sha,dh});
@@ -803,7 +828,7 @@ $("#go").onclick=async()=>{
       toast("⚠ 后端未保存，已暂存本机，请截图告知管理员");
     }
     step(4,"done");
-    if(!ocr) toast(t("aiFail"));
+    if(AI_ENABLED&&!ocr) toast(t("aiFail"));
     showReceipt(rec);
     FILES=[];renderThumbs();
     ["mInv","mImei","mPrice"].forEach(id=>{$("#"+id).value="";});
@@ -822,9 +847,10 @@ function showReceipt(r){
   const chks=(r.codes||[]).length?r.codes.map(c=>{const R=RULES[c]||{};const sev=(R.w||0)>=30?"fail":"warn";
       return `<div class="chk ${sev}"><span class="i">${sev==="fail"?"✕":"!"}</span><span>${R[LANG]||R.en||c}${R.w?`<span class="d"> · ${R.w}</span>`:""}</span></div>`;}).join("")
     :`<div class="chk pass"><span class="i">✓</span><span>${LANG==="zh"?"全部校验通过":LANG==="ar"?"اجتاز جميع الفحوصات":"All checks passed"}</span></div>`;
-  const ai=(r.aiInvNo||r.aiDate||r.aiModels)
-    ? line(t("invno"),r.aiInvNo)+line(t("date"),r.aiDate)+line(t("model"),r.aiModels)
-    : `<div class="kv"><b>—</b><span>${t("aiNone")}</span></div>`;
+  const aiBlock = !AI_ENABLED ? "" :
+    head(t("aiTitle"))+((r.aiInvNo||r.aiDate||r.aiModels)
+      ? line(t("invno"),r.aiInvNo)+line(t("date"),r.aiDate)+line(t("model"),r.aiModels)
+      : `<div class="kv"><b>—</b><span>${t("aiNone")}</span></div>`);
   $("#receipt").innerHTML=`
     <div class="stamp ${r.status}">${t(r.status)}<small>RISK ${r.risk}</small></div>
     <h3>${r.id}</h3>
@@ -835,8 +861,7 @@ function showReceipt(r){
     ${line(t("qty"),r.qty)}
     ${line(t("total"),r.total?r.total+" SAR":"")}
     ${line(t("imei"),(r.imeis||[]).join(", "))}
-    ${head(t("aiTitle"))}
-    ${ai}
+    ${aiBlock}
     <div class="chks">${chks}</div>`;
   $("#resultWrap").hidden=false;
   $("#resultWrap").scrollIntoView({behavior:"smooth",block:"nearest"});
